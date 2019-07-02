@@ -123,10 +123,23 @@ def ParseArgs(self, arglist):
 				PrintHelp()
 				return None, True
 
+	# Take everything that wasn'y specified and add a dictionary member for it
+	# with its value set to none, or the default value if given.
+	for arg in argument_specification:
+		if arg not in arg_dictionary:
+			current = argument_specification[arg]
+			if 'default' in current:
+				arg_dictionary[arg] = current['default']
+			else:
+				if current['type'] == 'flag':
+					arg_dictionary[arg] = False
+				else:
+					arg_dictionary[arg] = None
+
 	# By this point, we have all of the specific arguments validated and
 	# parsed. Construct a runtime type and return it.
-	arg_dictionary['additiona_args'] = additiona_args
-	arg_dictionary['dict_copy']      = copy.deepcopy(arg_dictionary)
+	arg_dictionary['additional_args'] = additional_args
+	arg_dictionary['dict_copy']       = copy.deepcopy(arg_dictionary)
 
 	# There is no guarantee that the configuration parameters specified are 
 	# valid, but that should be checked immediately after this.
@@ -140,6 +153,15 @@ def PrintHelp():
 
 
 argument_specification = {
+	'config_file' : {
+		'short_name'  : '-j',
+		'long_name'   : '--config-file',
+		'type'        : 'string',
+		'default'     : 'pyfit_config.json',
+		'predicate'   : None,
+		'description' : 'The configuration file to use. Default is pyfit_config.json.',
+		'examples'    : []
+	},
 	'generate_training_set' : {
 		'short_name'  : '-g',
 		'long_name'   : '--generate-training-set',

@@ -3,11 +3,12 @@
 # specified in the configuration file can also be specified as a command line
 # argument.
 
-def ArgumentsValid(args):
-	pass
-
 def ConstructConfiguration(args):
-	pass
+	# We need to ensure that every argument in args.additional_args is 
+	# enumerated below and has the proper type. If everything checks out
+	# then we load the configuration file and replace any values in it
+	# with those in the arguments specified.
+	
 
 # Items in this dictionary that do not have a default value are considered
 # required.
