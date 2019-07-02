@@ -2,6 +2,143 @@
 # in the structure below is also used to generate help output information when 
 # the user specified the --help argument.
 
+import copy
+
+# Returns an object that contains the arguments to the program. Also 
+# ensures that all arguments are recognized and that arguments are not
+# specified in cases where they are illogical. Will print help information
+# if the arguments are incorrect or if the user asks for help. Will also
+# print information about a particular argument if the user specifies it
+# after --help or -h.
+#
+# Arguments not specifically enumerated in this file will be returned
+# in a list, populating the member 'additional_args' in the returned
+# object.
+def ParseArgs(self, arglist):
+	program_name = arglist[0]
+
+	all_long_names  = [g[i]['long_name']  for g in argument_specification]
+	all_short_names = [g[i]['short_name'] for g in argument_specification]
+
+	names_to_spec  =     [{g[i]['long_name']:  g} for g in argument_specification]
+	names_to_spec.update([{g[i]['short_name']: g} for g in argument_specification])
+
+	specified_arguments = []
+
+	for arg in arglist[1:]:
+		if '=' in arg:
+			try:
+				argname, argval = arg.split('=')
+			except:
+				msg  = "All parameters that are not flags should be in the form"
+				msg += " --arg-name=arg-value. One of the specified parameters"
+				msg += "was in an invalid format." 
+				print(msg)
+				PrintHelp()
+				return None, True
+			specified_arguments.append((argname.lower(), argval))
+		else:
+			specified_arguments.append((arg.lower(), None))
+
+	# Parse all of the arguments. Also ensure that arguments not specifically
+	# enumerated here are in the proper format. Also make sure that there are
+	# no duplicate arguments and no illogical argument combinations.
+	arg_dictionary  = {}
+	additional_args = {}
+
+	for i, arg in enumerate(specified_arguments):
+		if arg[0] in ['-h', '--help', 'help']:
+			PrintHelp()
+			return None, True
+
+		if arg[0] in all_short_names or arg[0] in all_long_names:
+			# We recognize this argument specifically, make sure that
+			# there are not any duplicates.
+			proper_name = names_to_spec[arg[0]]
+
+			for j, comparison in enumerate(specified_arguments):
+				if j != i:
+					if names_to_spec[comparison[0]] == proper_name:
+						# We have a duplicate.
+						print("Duplicate argument (%s)"%proper_name)
+						PrintHelp()
+						return None, True
+
+			# Now we know that there are no duplicates. Parse the argument.
+			typestring = argument_specification[proper_name]['type']
+			if typestring == 'flag':
+				if arg[1] is not None:
+					# This is a flag, but a value was specified.
+					print("%s is a flag argument. No value should be specified."%(arg[0]))
+					PrintHelp()
+					return None, True
+
+				arg_dictionary[proper_name] = True
+			elif typestring == 'string':
+				if arg[1] is None:
+					print("%s is a value argument. Please specify a value."%(arg[0]))
+					PrintHelp()
+					return None, True
+
+				arg_dictionary[proper_name] = arg[1]
+
+			elif typestring == 'int':
+				if arg[1] is None:
+					print("%s is a value argument. Please specify a value."%(arg[0]))
+					PrintHelp()
+					return None, True
+
+				try:
+					arg_dictionary[proper_name] = int(arg[1])
+				except:
+					msg = "%s is an integer argument."%arg[0]
+					print(msg)
+					PrintHelp()
+					return None, True
+
+		else:
+			# This isn't a recognized argument. For now, just assume that its a
+			# configuration variable. Make sure there are no duplicates.
+			for j, comparison in enumerate(specified_arguments):
+				if j != i:
+					if arg[0] == comparison[0]:
+						# We have a duplicate.
+						print("Duplicate argument (%s)"%proper_name)
+						PrintHelp()
+						return None, True
+
+			additional_args[arg[0]] = arg[1]
+
+
+	# We now have a list of arguments that doesn't contain duplicates.
+	# Make sure that no argument is specified without its predicate.
+	for arg in arg_dictionary:
+		predicate = argument_specification[arg]['predicate']
+		if predicate is not None:
+			# This argument is predicated on the existence of another argument.
+			if predicate not in arg_dictionary:
+				msg = "The %s argument is only valid if the %s argument is specified."
+				msg = msg%(argument_specification[arg]['long_name'], predicate)
+				print(msg)
+				PrintHelp()
+				return None, True
+
+	# By this point, we have all of the specific arguments validated and
+	# parsed. Construct a runtime type and return it.
+	arg_dictionary['additiona_args'] = additiona_args
+	arg_dictionary['dict_copy']      = copy.deepcopy(arg_dictionary)
+
+	# There is no guarantee that the configuration parameters specified are 
+	# valid, but that should be checked immediately after this.
+
+	return type('arguments', (), arg_dictionary), False
+
+
+def PrintHelp():
+	pass
+
+
+
 argument_specification = {
 	'generate_training_set' : {
 		'short_name'  : '-g',
@@ -25,6 +162,14 @@ argument_specification = {
 		'type'        : 'string',
 		'predicate'   : 'generate_training_set',
 		'description' : 'The directory that contains the poscar files.',
+		'examples'    : []
+	},
+	'dft_input_file' : {
+		'short_name'  : '-f',
+		'long_name'   : '--dft-file',
+		'type'        : 'string',
+		'predicate'   : 'generate_training_set',
+		'description' : 'The file that contains the poscar data.',
 		'examples'    : []
 	},
 	'run_training' : {
