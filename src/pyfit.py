@@ -19,4 +19,7 @@ if __name__ == '__main__':
 	# passed around to the functions in the program.
 	config = ParseArgs(sys.argv)
 
-	print(config.verbosity)
+	print("Verbosity:                 %i"%config.verbosity)
+	print("Log Path:                  %s"%config.log_path)
+	print("E Shift:                   %f"%config.e_shift)
+	print("Unweighted Negative Error: %i"%config.unweighted_negative_error)

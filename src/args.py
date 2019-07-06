@@ -66,11 +66,12 @@ def ParseArgs(arglist):
 
 			for j, comparison in enumerate(specified_arguments):
 				if j != i:
-					if names_to_spec[comparison[0]] == proper_name:
-						# We have a duplicate.
-						print("Duplicate argument (%s)"%proper_name)
-						PrintHelp()
-						exit(1)
+					if comparison[0] in names_to_spec:
+						if names_to_spec[comparison[0]] == proper_name:
+							# We have a duplicate.
+							print("Duplicate argument (%s)"%proper_name)
+							PrintHelp()
+							exit(1)
 
 			# Now we know that there are no duplicates. Parse the argument.
 			typestring = argument_specification[proper_name]['type']
@@ -187,7 +188,38 @@ def combineArgsWithConfig(arg_dict):
 			config[k] = arg_dict[k]
 
 	for k in arg_dict['additional_args']:
-		config[k] = arg_dict[k]
+		# The additional arguments need to be converted from the --some-name
+		# form to the some_name form.
+		new_key = k.lstrip('-').replace('-', '_')
+
+		# We need to make an attempt at parsing these values.
+		if new_key in argument_specification:
+			typestring = argument_specification[new_key]['type']
+			if typestring == 'flag':
+				if arg_dict['additional_args'][k] is not None:
+					msg = "%s is a flag argument. No value should be specified."
+					msg %= new_key
+					print(msg)
+					exit(1)
+				config[new_key] = True
+			elif typestring == 'string':
+				config[new_key] = arg_dict['additional_args'][k]
+			elif typestring == 'int':
+				try:
+					config[new_key] = int(arg_dict['additional_args'][k])
+				except:
+					msg = "%s is an integer argument."%new_key
+					print(msg)
+					exit(1)
+			elif typestring == 'float':
+				try:
+					config[new_key] = float(arg_dict['additional_args'][k])
+				except:
+					msg = "%s is a float argument."%new_key
+					print(msg)
+					exit(1)
+			else:
+				config[new_key] = arg_dict['additional_args'][k]
 
 	# Make sure that no unrecognized configuration values are present.
 	for k in config:

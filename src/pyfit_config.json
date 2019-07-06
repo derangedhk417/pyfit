@@ -31,7 +31,7 @@
 	"energy_volume_interval"      : 0,
 	"validation_ratio"            : 0.1,
 	"objective_function"          : "rmse",
-	"unweighted_negative_error"   : true,
+	"unweighted_negative_error"   : false,
 	"group_error_file"            : "",
 	"group_error_interval"        : 10,
 	"default_group_target"        : 0.014,
