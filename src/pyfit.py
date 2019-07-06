@@ -8,26 +8,15 @@ import copy
 import torch
 import numpy as np
 
-from args   import ParseArgs, PrintHelp
-from config import ConstructConfiguration
+from args import ParseArgs, PrintHelp
 
 if __name__ == '__main__':
 	# The first task is to parse the arguments into a structure.
 	# This structure will then be used to modify the information in the 
 	# configuration file.
 
-	# Parse the arguments.
-	arguments, printed_help = ParseArgs(sys.argv)
+	# Parse the arguments. And construct a configuration structure that can be
+	# passed around to the functions in the program.
+	config = ParseArgs(sys.argv)
 
-	if printed_help:
-		exit()
-
-	# The arguments are valid at face values. Check the additional args against
-	# the specification in config.py. If everything is valid, construct the 
-	# configuration for this run of the program.
-
-	configuration, success = ConstructConfiguration(arguments)
-
-	if not success:
-		PrintHelp()
-		exit()
+	print(config.verbosity)
