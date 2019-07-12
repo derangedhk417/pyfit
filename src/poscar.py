@@ -18,6 +18,7 @@ class PoscarLoader:
 		self.n_atoms      = 0
 		self.n_structures = 0
 		self.structures   = []
+		self.all_comments = []
 
 		if config is None:
 			if e_shift is None:
@@ -64,6 +65,9 @@ class PoscarLoader:
 				struct = PoscarStructure(structure_lines, self.e_shift)
 				self.n_atoms += struct.n_atoms
 				self.structures.append(struct)
+
+				if struct.comment not in self.all_comments:
+					self.all_comments.append(struct.comment)
 			except ValueError as ex:
 				msg  = "Error occured in POSCAR structure starting on line %i."
 				msg %= (start_line + 1)
@@ -87,6 +91,28 @@ class PoscarLoader:
 
 	def __next__(self):
 		return self.iter.__next__()
+
+	# Returns all unique comment lines that were found in the poscar data.
+	# This is often used to store the name of the structural subgroup that
+	# the structure corresponds to.
+	def getAllComments(self):
+		if not self.loaded:
+			raise Exception("No data loaded.")
+
+		return self.all_comments
+
+	# Returns all structures whose comment line is an exact match to the 
+	# specified comment.
+	def getAllByComment(self, comment):
+		if not self.loaded:
+			raise Exception("No data loaded.")
+
+		result = []
+		for s in self.structures:
+			if s.comment == comment:
+				result.append(s)
+
+		return result
 
 	def loadFromDir(self, dir_path):
 		raise Exception("Not Implemented")
