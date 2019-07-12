@@ -11,3 +11,5 @@ Flexible system for training neural networks to interpolate DFT data.
    are received during the training process.
 6) Add various checks during the training process for things that could go wrong.
    This should include things like running out of memory, among others.
+7) Try to implement a decent means of predicting the time that long running tasks will take.
+8) Implement non-cartesian poscar coordinates

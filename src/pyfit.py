@@ -26,7 +26,16 @@ def RunPyfit(config):
 	if status != 0:
 		return status
 
+	# Now that basic configuration stuff is out of the way, we need to 
+	# generate a training set, train a neural network or both. 
+	#
+	# Note: To the extent that it is possible, all functionality in this
+	#       program is written so that it can take config = None as an
+	#       argument and will try to run without producing any output
+	#       text. This is so that the functionality in the system can
+	#       be directly called from elsewhere when useful.
 
+	
 
 if __name__ == '__main__':
 	# Parse the arguments. And construct a configuration structure that can be

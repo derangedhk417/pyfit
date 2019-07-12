@@ -714,6 +714,8 @@ def ValidateArgs(args):
 			print("The max_lbfgs_iterations value is illogical.")
 			return 1
 
+	return 0
+
 
 # This structure specifies the type, name, argument name and description of all
 # configuration variables that control the functionality of the program. 
