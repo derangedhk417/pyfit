@@ -1,3 +1,7 @@
+# Author: Adam Robinson
+# The file contains code for loading poscar data files. It converts them into
+# a structure that is ready for use in neural network training.
+
 from util import ProgressBar
 
 # Designed to load a poscar data file or set of poscar data files. Takes
@@ -81,6 +85,8 @@ class PoscarLoader:
 
 		progress.finish()
 		self.loaded = True
+
+		return self
 
 	def __iter__(self):
 		if not self.loaded:
