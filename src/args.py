@@ -4,6 +4,8 @@
 
 import copy
 import json
+import util
+import os
 
 # Returns an object that contains the arguments to the program. Also 
 # ensures that all arguments are recognized and that arguments are not
@@ -41,7 +43,7 @@ def ParseArgs(arglist):
 				msg += " --arg-name=arg-value. One of the specified parameters"
 				msg += " was in an invalid format." 
 				print(msg)
-				PrintHelp()
+				PrintHelp(arglist)
 				exit(1)
 
 			specified_arguments.append((argname.lower(), argval))
@@ -56,7 +58,7 @@ def ParseArgs(arglist):
 
 	for i, arg in enumerate(specified_arguments):
 		if arg[0] in ['-h', '--help', 'help']:
-			PrintHelp()
+			PrintHelp(arglist)
 			exit(1)
 
 		if arg[0] in all_short_names or arg[0] in all_long_names:
@@ -70,7 +72,7 @@ def ParseArgs(arglist):
 						if names_to_spec[comparison[0]] == proper_name:
 							# We have a duplicate.
 							print("Duplicate argument (%s)"%proper_name)
-							PrintHelp()
+							PrintHelp(arglist)
 							exit(1)
 
 			# Now we know that there are no duplicates. Parse the argument.
@@ -79,14 +81,14 @@ def ParseArgs(arglist):
 				if arg[1] is not None:
 					# This is a flag, but a value was specified.
 					print("%s is a flag argument. No value should be specified."%(arg[0]))
-					PrintHelp()
+					PrintHelp(arglist)
 					exit(1)
 
 				arg_dictionary[proper_name] = True
 			elif typestring == 'string':
 				if arg[1] is None:
 					print("%s is a value argument. Please specify a value."%(arg[0]))
-					PrintHelp()
+					PrintHelp(arglist)
 					exit(1)
 
 				arg_dictionary[proper_name] = arg[1]
@@ -94,7 +96,7 @@ def ParseArgs(arglist):
 			elif typestring == 'int':
 				if arg[1] is None:
 					print("%s is a value argument. Please specify a value."%(arg[0]))
-					PrintHelp()
+					PrintHelp(arglist)
 					exit(1)
 
 				try:
@@ -102,7 +104,7 @@ def ParseArgs(arglist):
 				except:
 					msg = "%s is an integer argument."%arg[0]
 					print(msg)
-					PrintHelp()
+					PrintHelp(arglist)
 					exit(1)
 
 		else:
@@ -113,7 +115,7 @@ def ParseArgs(arglist):
 					if arg[0] == comparison[0]:
 						# We have a duplicate.
 						print("Duplicate argument (%s)"%proper_name)
-						PrintHelp()
+						PrintHelp(arglist)
 						exit(1)
 
 			additional_args[arg[0]] = arg[1]
@@ -129,7 +131,7 @@ def ParseArgs(arglist):
 				msg = "The %s argument is only valid if the %s argument is specified."
 				msg = msg%(argument_specification[arg]['long_name'], predicate)
 				print(msg)
-				PrintHelp()
+				PrintHelp(arglist)
 				exit(1)
 
 
@@ -146,11 +148,11 @@ def ParseArgs(arglist):
 # This function takes the command line arguments and applies them to the 
 # configuration file, by replacing anything in the configuration file with
 # the values specified in the command line.
-# If --config-file (or -j) is not specified, the default is pyfit_config.json.
+# If --config-file (or -j) is 
 def combineArgsWithConfig(arg_dict):
 	# Figure out where to load the config file from.
 	if 'config_file' not in arg_dict:
-		config_fpath = 'pyfit_config.json'
+		config_fpath = '_pyfit_config.json'
 	else:
 		config_fpath = arg_dict['config_file']
 
@@ -303,9 +305,179 @@ def stripCStyleComments(string):
 # argument, as well as its long description if available. The target can also
 # be a non-argument configuration variable, in which case information from 
 # config.py will be printed.
-def PrintHelp(target=None):
-	all_names = [i for i in argument_specification]
+def PrintHelp(args):
+	program_name = args[0]
+	# Print the whole help message.
 
+	# We need a list of all short names, all long names and all 
+	# descriptions for all arguments.
+	short_names  = []
+	long_names   = []
+	descriptions = []
+
+	for k in argument_specification:
+		if 'short_name' in argument_specification[k]:
+			short_names.append(argument_specification[k]['short_name'])
+			long_names.append(argument_specification[k]['long_name'])
+			descriptions.append(argument_specification[k]['description'])
+
+	# Figure out how large the padding needs to be in each column of what 
+	# is printed in order to make things look nice.
+	short_name_width = max([len(s) for s in short_names])
+	long_name_width  = max([len(l) for l in long_names])
+
+	term_width = util.terminal_dims()[1]
+
+	# Now we need to print the short name, long name and description with
+	# appropriate padding so everything is aligned and looks nice. We also
+	# need to split the descriptions so that they wrap appropriately on 
+	# small consoles.
+
+	names_width = 4 + short_name_width + 2 + long_name_width + 4
+
+	help_str  = 'Usage: python3 %s [options]\n\n'%program_name
+	help_str += 'options:\n'
+	for sname, lname, desc in zip(short_names, long_names, descriptions):
+		sdiff = short_name_width - len(sname)
+		ldiff = long_name_width - len(lname)
+
+		help_str += '    ' + sname + ' '*sdiff + '  ' + lname + ' '*ldiff
+		help_str += '    '
+
+		# Now we figure out how the description needs to be printed.
+		if len(desc) + names_width < term_width:
+			help_str += desc + '\n'
+		else:
+			# We need to split the description by words and write it
+			# with newline characters breaking it up.
+			words = desc.split(' ')
+			lines = []
+			current_word = 0
+			current_line = ''
+			while current_word < len(words):
+				if len(lines) == 0:
+					width = len(current_line) + names_width
+				else:
+					width = len(current_line)
+
+
+				# See if we can fit another word.
+				if width + len(words[current_word]) < term_width:
+					line_len = len(current_line)
+					if line_len == 0:
+						current_line += words[current_word]
+					else:
+						current_line += ' ' + words[current_word]
+				else:
+					# Time to create a new line.
+					lines.append(current_line)
+					current_line = ' '*names_width + words[current_word]
+
+				current_word += 1
+
+			lines.append(current_line)
+			help_str += '\n'.join(lines) + '\n'
+
+	help_str += '\nType --help --arg-name for details about a specific argument.\n'
+
+	print(help_str)
+
+def ValidateArgs(args):
+	# Firstly, make sure that all of the relevant input files exist and are 
+	# accessible.
+
+	if args.generate_training_set:
+		# If both options are specified, that doesn't really make sense.
+		if args.dft_input_directory != "" and args.dft_input_file != "":
+			msg  = "Both dft_input_directory and dft_input_file were specified."
+			msg += "It only makes sense to have one or the other. If you have "
+			msg += "one specified in the config file and one specified on the "
+			msg += "command line, set the one that you don't want to use to an "
+			msg += "empty string like so -> \n\t--dft-directory=\"\" or \n"
+			msg += "\t--dft-file=\"\"\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		# If the system is generating a training set and neither option is 
+		# specified, this doesn't make sense.
+		if args.dft_input_directory == "" and args.dft_input_file == "":
+			msg  = "You have configured the program to generate a training set"
+			msg += "but neither dft_input_directory nor dft_input_file has been"
+			msg += "specified. Please specify them in the config file or use "
+			msg += "one of the following options: \n"
+			msg += "\t--dft-directory=<some directory>\n"
+			msg += "\t--dft-file=<some file>\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if args.training_set_output_file == "":
+			msg  = "You have not specified a value for training_set_output_file. "
+			msg += "Please do this in the configuration file or with one of the "
+			msg += "following options:\n"
+			msg += "\t--training-set-out=<some file to write>\n"
+			msg += "\t-a=<some file to write>\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if os.path.isfile(args.training_set_output_file):
+			msg  = "The specified training set output file already exists. "
+			msg += "pyfit does not overwrite large files. Please change the "
+			msg += "name or delete it in order to continue."
+			print(msg)
+			return 1
+
+		if args.dft_input_file != "":
+			# Make sure it exists and that we can read it.
+			if not os.path.isfile(args.dft_input_file):
+				print("The specified dft input file does not exist.")
+				return 1
+
+			try:
+				with open(args.dft_input_file, 'r') as file:
+					file.read(1)
+			except:
+				print("Could not read the specified dft input file.")
+				return 1
+
+		if args.dft_input_directory != "":
+			if args.dft_input_directory[-1] != '/':
+				args.dft_input_directory += '/'
+			# Make sure it exists, contains at least one file with the extenstion
+			# .poscar and that all files with that extension are readable.
+
+			if not os.path.isdir(args.dft_input_directory):
+				print("The specified dft input directory does not exist.")
+				return 1
+
+			try:
+				contents = os.listdir(args.dft_input_directory)
+			except:
+				print("The specified dft input directory was inaccessible.")
+
+			poscar_files = []
+			for c in contents:
+				if c.split('.')[-1].lower() == 'poscar':
+					poscar_files.append(c)
+
+			if len(poscar_files) == 0:
+				msg  = "There don\'t appear to be any poscar files in the "
+				msg += "specified dft input directory. This program expects "
+				msg += "all poscar files to have the .poscar extension."
+				print(msg)
+				return 1
+
+			for fname in poscar_files:
+				full_name =  args.dft_input_directory + fname
+				try:
+					with open(full_name, 'r') as file:
+						file.read(1)
+				except:
+					msg = "could not read the dft input file %s"%full_name
+					print(msg)
+					return 1
 
 # This structure specifies the type, name, argument name and description of all
 # configuration variables that control the functionality of the program. 
@@ -368,21 +540,21 @@ argument_specification = {
 		'long_description' : None,
 		'examples'         : []
 	},
-	'run_training' : {
-		'short_name'       : '-t',
-		'long_name'        : '--run-training',
-		'type'             : 'flag',
-		'predicate'        : None,
-		'description'      : 'Train the neural network.',
-		'long_description' : None,
-		'examples'         : []
-	},
 	'training_set_in' : {
 		'short_name'       : '-s',
 		'long_name'        : '--training-set-in',
 		'type'             : 'string',
 		'predicate'        : 'run_training',
 		'description'      : 'The training file to use.',
+		'long_description' : None,
+		'examples'         : []
+	},
+	'run_training' : {
+		'short_name'       : '-t',
+		'long_name'        : '--run-training',
+		'type'             : 'flag',
+		'predicate'        : None,
+		'description'      : 'Train the neural network.',
 		'long_description' : None,
 		'examples'         : []
 	},
@@ -551,16 +723,3 @@ argument_specification = {
 		'description' : 'The maximum number of LBFGS optimization iterations per training iteration. A value of 10 is usually sufficient.'
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
