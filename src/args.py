@@ -1,3 +1,4 @@
+# Author: Adam Robinson
 # This file serves to define the valid arguments for pyfit. The information 
 # in the structure below is also used to generate help output information when 
 # the user specified the --help argument.
@@ -386,6 +387,28 @@ def ValidateArgs(args):
 	# Firstly, make sure that all of the relevant input files exist and are 
 	# accessible.
 
+	if args.gpu_affinity < 0:
+		print("Negative gpu affinity specified.")
+		return 1
+
+	if args.thread_count < 0:
+		print("Negative thread count specified.")
+		return 1
+
+	if args.verbosity < 0:
+		print("Negative verbosity specified.")
+		return 1
+
+	if args.log_path != "":
+		try:
+			with open(args.log_path, 'w') as file:
+				file.write('test')
+
+			os.remove(args.log_path)
+		except:
+			print("The log file does not appear to be writable.")
+			return 1
+
 	if args.generate_training_set:
 		# If both options are specified, that doesn't really make sense.
 		if args.dft_input_directory != "" and args.dft_input_file != "":
@@ -428,6 +451,18 @@ def ValidateArgs(args):
 			msg += "name or delete it in order to continue."
 			print(msg)
 			return 1
+
+		# Make sure that nothing is going to stop the system from writing the
+		# output file at the end.
+		try:
+			with open(args.training_set_output_file, 'w') as file:
+				file.write('test')
+
+			os.remove(args.training_set_output_file)
+		except:
+			print("The training set output file does not appear to be writable.")
+			return 1
+
 
 		if args.dft_input_file != "":
 			# Make sure it exists and that we can read it.
@@ -478,6 +513,207 @@ def ValidateArgs(args):
 					msg = "could not read the dft input file %s"%full_name
 					print(msg)
 					return 1
+
+	if args.run_training:
+		if args.training_iterations < 0:
+			print("Negative number of training iterations specified.")
+			return 1
+
+		if args.training_set_in == "":
+			msg  = "No input training set was specified. Please specify one via "
+			msg += "either the configuration value \'training_set_in\' or one of the "
+			msg += "following arguments:\n"
+			msg += "\t--training-set-in=<training set file>\n"
+			msg += "\t-s=<training set file>\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if args.neural_network_in == "":
+			msg  = "No input neural net was specified. Please specify one via "
+			msg += "either the configuration value \'neural_network_in\' or one of the "
+			msg += "following arguments:\n"
+			msg += "\t--network-input-file=<nn file>\n"
+			msg += "\t-e=<nn file>\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if args.neural_network_out == "":
+			msg  = "No output neural net was specified. Please specify one via "
+			msg += "either the configuration value \'neural_network_out\' or one of the "
+			msg += "following arguments:\n"
+			msg += "\t--network-output-file=<nn file>\n"
+			msg += "\t-y=<nn file>\n\n"
+			print(msg)
+			PrintHelp()
+			return 1
+
+		# Make sure the input files are there and readable. Also make sure that
+		# the output file doesn't already exist.
+
+		if not os.path.isfile(args.training_set_in):
+			print("The specified training set file does not exist.")
+			return 1
+
+		if not os.path.isfile(args.neural_network_in):
+			print("The specified input neural network does not exist.")
+			return 1
+
+		try:
+			with open(args.training_set_in, 'r') as file:
+				file.read(1)
+		except:
+			print("Could not read the specified training set input file.")
+			return 1
+
+		try:
+			with open(args.neural_network_in, 'r') as file:
+				file.read(1)
+		except:
+			print("Could not read the specified neural net input file.")
+			return 1
+
+		if os.isfile(args.neural_network_out):
+			print("The specified neural network output file already exists.")
+			return 1
+
+		# Make sure that nothing is going to stop the system from writing the
+		# output file at the end.
+		try:
+			with open(args.neural_network_out, 'w') as file:
+				file.write('test')
+
+			os.remove(args.neural_network_out)
+		except:
+			print("The neural net output file does not appear to be writable.")
+			return 1
+
+		if args.network_backup_interval > 0:
+			if args.network_backup_dir == "":
+				msg  = "No network backup directory was specified, but the "
+				msg += "backup interval was set. Please either set the "
+				msg += "backup interval to 0 or specify a value for "
+				msg += "network_backup_dir in the config file."
+				print(msg)
+				PrintHelp()
+				return 1
+
+			if args.network_backup_dir[-1] != '/':
+				args.network_backup_dir += '/'
+
+			# If the network backup directory already exists, make sure it is empty.
+			# If it doesn't exist, create it. Also make sure that we can create 
+			# files in it and write to them.
+			if os.path.isdir(args.network_backup_dir):
+				try:
+					contents = os.listdir(args.network_backup_dir)
+				except:
+					msg  = "The specified network backup directory is not "
+					msg += "accessible. Please check the permissions for it."
+					print(msg)
+					return 1
+
+				if len(contents) != 0:
+					print("The specified backup directory is not empty.")
+					return 1
+			else:
+				try:
+					os.mkdir(args.network_backup_dir)
+				except:
+					print("Could not create the network backup directory.")
+					return 1
+
+			try:
+				# Make sure that we can write to the backup directory.
+				with open(args.network_backup_dir + 'test', 'w') as file:
+					file.write('test')
+
+				os.remove(args.network_backup_dir + 'test')
+			except:
+				msg  = "The network backup directory does not appear "
+				msg += "to be writable."
+				print(msg)
+				return 1
+		elif args.network_backup_interval < 0:
+			args.network_backup_interval = 0
+
+		if args.validation_interval < 0:
+			print("Negative validation interval specified.")
+			return 1
+
+		if args.loss_log_path == "":
+			msg  = "No path was specified for logging the loss of the neural "
+			msg += "network. Please specify a value for \'loss_log_path\' in "
+			msg += "the config file."
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if args.validation_log_path == "":
+			msg  = "No path was specified for logging the validation loss of the "
+			msg += "neural network. Please specify a value for \'loss_log_path\' "
+			msg += "in the config file."
+			print(msg)
+			PrintHelp()
+			return 1
+
+		if args.energy_volume_file != "":
+			try:
+				with open(args.energy_volume_file, 'w') as file:
+					file.write('test')
+
+				os.remove(args.energy_volume_file)
+			except:
+				msg  = "An energy vs. volume output file was specified, but "
+				msg += "is not writable."
+				print(msg)
+				return 1
+
+		if args.energy_volume_interval < 0:
+			print("Negative value specified for energy vs. volume record interval.")
+			return 1
+
+		if args.energy_volume_interval > 0:
+			if args.energy_volume_file == "":
+				msg  = "The energy vs. volume record interval is set, but no "
+				msg += "file is specified to record it in. Please specify a "
+				msg += "value for \'energy_volume_file\' in the config file."
+				print(msg)
+				return 1
+
+		# Make sure that all of the output files for the training process are
+		# writable. 
+		try:
+			with open(args.loss_log_path, 'w') as file:
+				file.write('test')
+
+			os.remove(args.loss_log_path)
+		except:
+			print("The loss log file does not appear to be writable.")
+			return 1
+
+		try:
+			with open(args.validation_log_path, 'w') as file:
+				file.write('test')
+
+			os.remove(args.validation_log_path)
+		except:
+			print("The validation log file does not appear to be writable.")
+			return 1
+
+		if args.validation_ratio < 0.0 or args.validation_ratio > 1.0:
+			print("Validation ratio must be in [0.0, 1.0]")
+			return 1
+
+		if args.learning_rate < 0.0 or args.learning_rate > 10:
+			print("The learning rate value is illogical, please correct it.")
+			return 1
+
+		if args.max_lbfgs_iterations <= 0:
+			print("The max_lbfgs_iterations value is illogical.")
+			return 1
+
 
 # This structure specifies the type, name, argument name and description of all
 # configuration variables that control the functionality of the program. 
@@ -585,15 +821,6 @@ argument_specification = {
 		'long_description' : None,
 		'examples'         : []
 	},
-	'optimizer' : {
-		'short_name'       : '-o',
-		'long_name'        : '--training-optimizer',
-		'type'             : 'string',
-		'predicate'        : 'run_training',
-		'description'      : 'The optimization algorithm to use. (LBFGS, SGD)',
-		'long_description' : None,
-		'examples'         : []
-	},
 	'randomize' : {
 		'short_name'       : '-r',
 		'long_name'        : '--randomize-nn',
@@ -642,10 +869,6 @@ argument_specification = {
 		'type'        : 'string',
 		'description' : 'The path to the file to put logs into.'
 	},
-	'neighbor_list_out' : {
-		'type'        : 'string',
-		'description' : 'The file to write a neighbor list into for each atom in the trainining set.'
-	},
 	'div_by_r0_squared' : {
 		'type'        : 'flag',
 		'description' : 'Whether or not to divide structural parameters by their corresponding value of r0 squared.'
@@ -689,30 +912,6 @@ argument_specification = {
 	'validation_ratio' : {
 		'type'        : 'float',
 		'description' : 'The ratio of validation inputs to total inputs.'
-	},
-	'objective_function' : {
-		'type'        : 'string',
-		'description' : 'The objective function to minimize when training the network. Options are \'rmse\' and \'group-weights\''
-	},
-	'unweighted_negative_error' : {
-		'type'        : 'flag',
-		'description' : 'Controls how the error is calculated when using the \'group-weights\' objective function. If true, groups below their target error will be treated as having zero error. Otherwise, being below target error will cause a group to be treated as having some error.'
-	},
-	'group_error_file' : {
-		'type'        : 'string',
-		'description' : 'The file to store the per-group training error in. This option is ignored if objective_function != \'group-weights\''
-	},
-	'group_error_interval' : {
-		'type'        : 'int',
-		'description' : 'The interval on which the per-group error is dumped to the group_error_file. This option is ignored if objective_function != \'group-weights\''
-	},
-	'default_group_target' : {
-		'type'        : 'float',
-		'description' : 'The default error value to target for groups that don\'t have their target error explicitely given. This option is ignored if objective_function != \'group-weights\''
-	},
-	'subgroup_error_targets' : {
-		'type'        : 'dict',
-		'description' : 'The target error value for each group. Groups not included will take the default value of default_group_target. This option is ignored if objective_function != \'group-weights\''
 	},
 	'learning_rate' : {
 		'type'        : 'float',

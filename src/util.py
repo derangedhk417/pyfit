@@ -1,3 +1,4 @@
+# Author: Adam Robinson
 import os
 
 # Returns the dimensions of the current terminal window or a good guess if 
