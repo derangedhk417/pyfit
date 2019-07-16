@@ -2,6 +2,7 @@
 # This file contains a class that can both read and write the header that is 
 # present in training set files and neural network files.
 
+# WARNING: __eq__ is overridden for this class.
 class NetworkConfig:
 	def __init__(self):
 		pass
@@ -126,3 +127,30 @@ class NetworkConfig:
 			string += '\n'
 
 		return string
+
+	# This is used to ensure that the LSPARAM file and the NN file being used
+	# match up completely. For those not familiar with the syntax,
+	# this allows you to do "config_a == config_b". In Python the default 
+	# behavior for class comparison is basically to see if they are the same
+	# address, which won't work when comparing the headers from two different
+	# files.
+	def __eq__(self, other):
+		# don't compare the randomize flag
+		equality  = self.gi_mode                == other.gi_mode
+		equality &= self.gi_shift               == other.gi_shift
+		equality &= self.activation_function    == other.activation_function
+		equality &= self.n_species              == other.n_species
+		equality &= self.element                == other.element
+		equality &= self.mass                   == other.mass
+		equality &= self.max_random             == other.max_random
+		equality &= self.cutoff_distance        == other.cutoff_distance
+		equality &= self.truncation_distance    == other.truncation_distance
+		equality &= self.gi_sigma               == other.gi_sigma
+		equality &= self.n_legendre_polynomials == other.n_legendre_polynomials
+		equality &= self.legendre_orders        == other.legendre_orders
+		equality &= self.r0                     == other.r0
+		equality &= self.BOP_param0             == other.BOP_param0
+		equality &= self.BOP_parameters         == other.BOP_parameters
+		equality &= self.layer_sizes            == other.layer_sizes
+
+		return equality
