@@ -1,4 +1,4 @@
-# Author: Adam Robinson
+# Authors: Adam Robinson, James Hickman
 import os
 from datetime import datetime
 

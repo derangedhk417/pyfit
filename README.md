@@ -1,6 +1,10 @@
 # pyfit
 Flexible system for training neural networks to interpolate DFT data. 
 
+## Notes
+
+1) You'll notice a lot of error messages split up into multiple lines. This is because I wanted this code to be readable in a terminal, or in an IDE that is split into multiple columns. I didn't enforce a maximum line width in the original version, and it got really annoying.
+
 # TODO
 
 1) Improve help output with examples and drill down into parameters.

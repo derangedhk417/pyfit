@@ -1,4 +1,4 @@
-# Author: Adam Robinson
+# Authors: Adam Robinson, James Hickman
 # This file serves to process command line arguments, load the configuration 
 # file and call the appropriate functionality. The majority of the intensive
 # calculations are done in other files.

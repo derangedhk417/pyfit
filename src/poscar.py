@@ -1,4 +1,4 @@
-# Author: Adam Robinson
+# Authors: Adam Robinson, James Hickman
 # The file contains code for loading poscar data files. It converts them into
 # a structure that is ready for use in neural network training.
 
@@ -39,43 +39,29 @@ class PoscarLoader:
 
 		progress = ProgressBar("Poscar Files ", 30, len(lines), update_every=50)
 
+		# This code originally had validation checks for all values.
+		# For now, they have been removed. Experience using the program
+		# for quite a while has led me to believe that they are uneccessary.
+
 		start_line = 0
 		while start_line < len(lines):
 			# We need to know the number of atoms in the file 
 			# before we can send the proper string of text to
 			# the parsing function.
-			try:
-				atoms_in_struct = int(lines[start_line + 5])
-			except Exception as ex:
-				msg  = "Unable to read the number of atoms in the "
-				msg += "structure on line %i."%(start_line + 6)
-				raise Exception(msg) from ex
+			
+			atoms_in_struct = int(lines[start_line + 5])
+			
+			base   = start_line
+			stride = base + 8 + atoms_in_struct
+			structure_lines = lines[base:stride]
+			
+			struct = PoscarStructure(structure_lines, self.e_shift)
+			self.n_atoms += struct.n_atoms
+			self.structures.append(struct)
 
-			try:
-				# Select a chunk of lines corresponding to a structure and send it to 
-				# the class that parses structures.
-				base   = start_line
-				stride = base + 8 + atoms_in_struct
-				structure_lines = lines[base:stride]
-			except IndexError as ex:
-				msg  = "The file appears to be truncated improperly. Attempting "
-				msg += "to read the POSCAR structure starting at line %i "
-				msg += "resulted in an index error."
-				msg %= (start_line + 1)
-
-				raise Exception(msg) from ex
-
-			try:
-				struct = PoscarStructure(structure_lines, self.e_shift)
-				self.n_atoms += struct.n_atoms
-				self.structures.append(struct)
-
-				if struct.comment not in self.all_comments:
-					self.all_comments.append(struct.comment)
-			except ValueError as ex:
-				msg  = "Error occured in POSCAR structure starting on line %i."
-				msg %= (start_line + 1)
-				raise Exception(msg) from ex
+			if struct.comment not in self.all_comments:
+				self.all_comments.append(struct.comment)
+			
 
 
 			start_line += 8 + atoms_in_struct
@@ -127,15 +113,12 @@ class PoscarLoader:
 class PoscarStructure:
 	def __init__(self, lines, e_shift):
 		self.comment = lines[0]
-		try:
-			self.scale_factor  = float(lines[1])
-			self.a1            = self.parseVector(lines[2], self.scale_factor)
-			self.a2            = self.parseVector(lines[3], self.scale_factor)
-			self.a3            = self.parseVector(lines[4], self.scale_factor)
-			self.n_atoms       = int(lines[5])
-		except ValueError as ex:
-			msg = "There was an error parsing a value in a POSCAR structure."
-			raise Exception(msg) from ex
+		self.scale_factor  = float(lines[1])
+		self.a1            = self.parseVector(lines[2], self.scale_factor)
+		self.a2            = self.parseVector(lines[3], self.scale_factor)
+		self.a3            = self.parseVector(lines[4], self.scale_factor)
+		self.n_atoms       = int(lines[5])
+		
 
 		if lines[6][0] == 'c':
 			self.is_cartesian = True
@@ -150,20 +133,9 @@ class PoscarStructure:
 
 		self.atoms = []
 		for i in lines[7:-1]:
-			try:
-				self.atoms.append(self.parseVector(i, self.scale_factor))
-			except ValueError as ex:
-				msg  = "Invalid value encountered for atomic coordinate "
-				msg += "in POSCAR structure."
-				raise ValueError(msg) from ex
-
-
-		try:
+			self.atoms.append(self.parseVector(i, self.scale_factor))
 			self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
-		except ValueError as ex:
-			msg  = "Invalid value encountered for structure energy in "
-			msg += "POSCAR structure."
-			raise ValueError(msg) from ex
+		
 
 	def parseVector(self, string, scale):
 		# This function parses a vector supplied as a string of space separated floating

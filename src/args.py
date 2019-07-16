@@ -1,4 +1,4 @@
-# Author: Adam Robinson
+# Authors: Adam Robinson, James Hickman
 # This file serves to define the valid arguments for pyfit. The information 
 # in the structure below is also used to generate help output information when 
 # the user specified the --help argument.
