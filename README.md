@@ -5,7 +5,7 @@ Flexible system for training neural networks to interpolate DFT data.
 
 James: While you are reviewing this code, if you find a block of code that isn't 100% clear, it may benefit you to insert the following lines under it.
 
-  import code
+  import code  
   code.interact(local=locals())
 
 This will initialize an interactive console at that line of code and allow you to inspect the contents of all variables that are in scope. I often find this useful when trying to get a sense for how other peoples code works. I also do it when I am trying to figure out how my own code works and I can't remember because its old.
