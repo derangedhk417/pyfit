@@ -2,6 +2,8 @@
 # This file contains a simple function that takes poscar data and configuration
 # information and returns a neighbor list structure. See below for format.
 
+from util import ProgressBar
+
 # This first argument to this function should pretty much always be the 
 # structures member of a PoscarLoader instance. The second should be neural
 # network potential that this is being generated for.
@@ -107,7 +109,7 @@ def GenerateNeighborList(structures, potential):
 			# element wise. It then selects all items in the array 
 			# 'periodic_structure' that correspond to a value of true in the 
 			# array of boolean values.
-			mask      = (distances > 0.0001) & (distances < cutoff)
+			mask      = (distances > 1e-8) & (distances < cutoff)
 			neighbors = periodic_structure[mask]
 
 			# This line just takes all of the neighbor vectors that we now
