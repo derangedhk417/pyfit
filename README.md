@@ -27,4 +27,6 @@ Flexible system for training neural networks to interpolate DFT data.
 6) Add various checks during the training process for things that could go wrong.
    This should include things like running out of memory, among others.
 7) Try to implement a decent means of predicting the time that long running tasks will take.
-8) Implement non-cartesian poscar coordinates
+8) Implement non-cartesian poscar coordinates.
+9) Figure out 1.5 coefficient thing in neighbor.py
+10) Make periodic structure generation in neighbor.py more efficient.

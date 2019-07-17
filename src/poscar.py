@@ -14,7 +14,6 @@ from util import ProgressBar
 # an instance of PoscarStructure for each structure loaded.
 class PoscarLoader:
 	def __init__(self, config, e_shift=None):
-		self.config    = config
 		self.e_shift   = e_shift
 		self.loaded    = False
 		self.iter      = None
@@ -27,7 +26,7 @@ class PoscarLoader:
 		if config is None:
 			if e_shift is None:
 				raise Exception("Either config or e_shift must be specified.")
-		else:
+		elif self.e_shift is None:
 			self.e_shift = config.e_shift
 
 	def loadFromFile(self, file_path):
@@ -61,8 +60,6 @@ class PoscarLoader:
 
 			if struct.comment not in self.all_comments:
 				self.all_comments.append(struct.comment)
-			
-
 
 			start_line += 8 + atoms_in_struct
 			progress.update(start_line)
@@ -130,21 +127,21 @@ class PoscarStructure:
 			msg += "Line 7 should start with 'c' or 'd'"
 			raise ValueError(msg)
 
+		self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
 
-		self.atoms = []
-		for i in lines[7:-1]:
-			self.atoms.append(self._parseVector(i, self.scale_factor))
-			self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
-		
+		self.atoms = np.zeros((len(lines[7:-1]), 3))
+		for idx, line in enumerate(lines[7:-1]):
+			self.atoms[idx, :] = self._parseVector(line, self.scale_factor)
 
 	def _parseVector(self, string, scale):
-		# This function parses a vector supplied as a string of space separated floating
-		# point values. It also scales the vector based on the supplied scale factor.
+		# This function parses a vector supplied as a string of space 
+		# separated floating point values. It also scales the vector 
+		# based on the supplied scale factor.
 
 		cells = [s for s in string.split(' ') if s != '' and not s.isspace()]
 
-		return [
+		return np.array([
 			float(cells[0])*scale,
 			float(cells[1])*scale,
 			float(cells[2])*scale
-		]
+		])
