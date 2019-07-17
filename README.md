@@ -30,3 +30,4 @@ Flexible system for training neural networks to interpolate DFT data.
 8) Implement non-cartesian poscar coordinates.
 9) Figure out 1.5 coefficient thing in neighbor.py
 10) Make periodic structure generation in neighbor.py more efficient.
+11) Add isinstance checks on certain functions to ensure that arguments are of the correct type.
