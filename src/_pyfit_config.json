@@ -24,7 +24,6 @@
 	"loss_log_path"               : "loss.txt",
 	"validation_log_path"         : "validation.txt",
 	"validation_interval"         : 10,
-	"group_wise_validation_split" : true,
 	"energy_volume_file"          : "",
 	"energy_volume_interval"      : 0,
 	"validation_ratio"            : 0.1,

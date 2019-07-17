@@ -899,10 +899,6 @@ argument_specification = {
 		'type'        : 'int',
 		'description' : 'The interval to calculate the validation error on. 0 = don\'t calculate validation.'
 	},
-	'group_wise_validation_split' : {
-		'type'        : 'flag',
-		'description' : 'Whether or not to ensure that the validation set is sampled equally for every structural group. This prevents the random selection of validation data from missing too much of one group.'
-	},
 	'energy_volume_file' : {
 		'type'        : 'string',
 		'description' : 'The file to store the energy vs. volume data for the network in.'

@@ -156,7 +156,34 @@ class TrainingSet:
 			progress.finish()
 			file.write('\n')
 
-			
+
+	# Returns all structures in the training set, divided by which group they
+	# are a member of. The result is an array with one element per group and
+	# an array with the same format as self.structures for each element. This
+	# will also return a second value, which is a unique list of group names.
+	#
+	# The returned arrays will both be lexicographically sorted by group name.
+	def getAllByGroup(self):
+		# First, get a unique list of group names.
+		group_names = []
+		for struct in self.structures:
+			group_name = struct[0].group_name
+			if group_name not in group_names:
+				group_names.append(group_name)
+
+		group_names = sorted(group_names)
+
+		# Now we build the actual array.
+		result = []
+		for name in group_names:
+			current_group = []
+			for struct in self.structures:
+				if struct[0].group_name == name:
+					current_group.append(struct)
+			result.append(current_group)
+
+		return result, group_names
+
 	# Extracts all of the relevent cells of information from a line, split
 	# on ' ' characters. Also removes '#' characters.
 	def _getCellsFromLine(self, line):
@@ -182,9 +209,6 @@ class TrainingInput:
 		for idx, val in enumerate(self._getCellsFromLine(line2)[1:]):
 			self.structure_params[idx] = float(val)
 
-		return self
-
-	def __init__(self):
 		return self
 
 	# Extracts all of the relevent cells of information from a line, split

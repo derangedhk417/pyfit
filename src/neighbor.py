@@ -37,6 +37,11 @@ def GenerateNeighborList(structures, potential):
 		#       in order to produce the minimum periodic structure.
 		#       Right now this code makes what is probably way too
 		#       large of a structure, just to be safe.
+		#
+		# TODO: Implement the optimized neighbor list algorithm I came up with.
+		#       It isn't really necessary, but it would be a good test of the
+		#       algorithm and could speed the process up by as much as a factor
+		#       of ten if I'm right about it. 
 
 		# Normalize the translation vectors.
 		a1_n = np.linalg.norm(structure.a1)
