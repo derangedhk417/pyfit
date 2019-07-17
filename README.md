@@ -7,7 +7,7 @@ Flexible system for training neural networks to interpolate DFT data.
 
 ## Conventions
 
-* Functions meant to be exported from a module have capital letters at the start of each wor.
+* Functions meant to be exported from a module have capital letters at the start of each word.
 * Classes have the same format.
 * module files are camel cased
 * Public class methods have a lowercase letter at the beginning of their name.

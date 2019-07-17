@@ -11,9 +11,8 @@ from config import NetworkConfig
 
 class NetworkPotential:
 	def __init__(self):
-		pass
-
-	
+		self.layers         = None
+		self.network_values = None
 
 	# Randomizes the network based upon its configuration header value for
 	# the maximum random value.
@@ -49,6 +48,30 @@ class NetworkPotential:
 			lines, 
 			values_loaded=self.config.randomize
 		)
+
+	# Writes the network to a file.
+	def writeNetwork(self, path):
+		if self.layers is None:
+			raise Exception("This network has not been loaded.")
+
+		with open(path, 'w') as file:
+			file.write(self.config.toFileString())
+
+			# Now we write the weights by column, rather than
+			# by row for each layer. The biases go at the end
+			# for each layer.
+			# len(layer[0][0]) is the width of the weight matrix  (N)
+			# len(layer)       is the height of the weight matrix (M)
+			for layer in self.layers:
+				# Write the weights.
+				for weight in range(len(layer[0][0])):
+					for node in range(len(layer)):
+						weight_value = layer[node][0][weight]
+						file.write(' %-+17.8E 0.0000\n'%(weight_value))
+
+				# Write the biases.
+				for node in range(len(layer)):
+					file.write(' %-+17.8E 0.0000\n'%(layer[node][1]))
 
 	# Using the flat array of values in the network file, constructs an
 	# array where each element is a layer. Each element of every layer is
