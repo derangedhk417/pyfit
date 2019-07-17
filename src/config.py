@@ -26,35 +26,35 @@ class PotentialConfig:
 		# For now, they have been removed. Experience using the program
 		# for quite a while has led me to believe that they are uneccessary.
 
-		self.gi_mode             = int(lines[0][0])
-		self.gi_shift            = float(lines[0][1])
-		self.activation_function = int(lines[0][2])
+		self.gi_mode             = int(cells[0][0])
+		self.gi_shift            = float(cells[0][1])
+		self.activation_function = int(cells[0][2])
 
-		self.n_species = int(lines[1][0])
-		self.element   = lines[2][0]
-		self.mass      = float(lines[2][1])
+		self.n_species = int(cells[1][0])
+		self.element   = cells[2][0]
+		self.mass      = float(cells[2][1])
 
-		self.randomize = int(lines[3][0])
+		self.randomize = int(cells[3][0])
 
 		# convert from int to bool
 		self.randomize = self.randomize == 1
 
-		self.max_random          = float(lines[3][1])
-		self.cutoff_distance     = float(lines[3][2])
-		self.truncation_distance = float(lines[3][3])
-		self.gi_sigma            = float(lines[3][4])
+		self.max_random          = float(cells[3][1])
+		self.cutoff_distance     = float(cells[3][2])
+		self.truncation_distance = float(cells[3][3])
+		self.gi_sigma            = float(cells[3][4])
 
-		self.n_legendre_polynomials = int(lines[4][0])
-		self.legendre_orders        = [int(c) for c in lines[4][1:]]
+		self.n_legendre_polynomials = int(cells[4][0])
+		self.legendre_orders        = [int(c) for c in cells[4][1:]]
 
-		self.n_r0 = int(lines[5][0])
-		self.r0   = [float(c) for c in lines[5][1:]]
+		self.n_r0 = int(cells[5][0])
+		self.r0   = [float(c) for c in cells[5][1:]]
 
-		self.BOP_param0     = int(lines[6][0])
-		self.BOP_parameters = [float(c) for c in lines[6][1:]]
+		self.BOP_param0     = int(cells[6][0])
+		self.BOP_parameters = [float(c) for c in cells[6][1:]]
 
-		self.n_layers    = int(lines[7][0])
-		self.layer_sizes = [int(c) for c in lines[7][1:]]
+		self.n_layers    = int(cells[7][0])
+		self.layer_sizes = [int(c) for c in cells[7][1:]]
 
 		# I'm still including these checks because they've 
 		# helped me a few times.
@@ -70,7 +70,7 @@ class PotentialConfig:
 			error += "actual number present in the file. "
 			raise ValueError(error)
 
-		if self.n_layers != len(line8[1:]):
+		if self.n_layers != len(cells[7][1:]):
 			err  = "It appears as though more layers were specified than the "
 			err += "first number on line 8 would indicate."
 			raise ValueError(err) 
@@ -79,6 +79,8 @@ class PotentialConfig:
 			err  = "The input layer dimensions of the neural network do not "
 			err += "match the structural parameter dimensions."
 			raise ValueError()
+
+		return self
 
 	# This converts the configuration parameters into a string suitable for 
 	# writing into a file. If prepend_comment = True, '#' will go at the 

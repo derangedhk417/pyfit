@@ -307,7 +307,10 @@ def stripCStyleComments(string):
 # be a non-argument configuration variable, in which case information from 
 # config.py will be printed.
 def PrintHelp(args):
-	program_name = args[0]
+	if args is not None:
+		program_name = args[0]
+	else:
+		program_name = 'pyfit.py'
 	# Print the whole help message.
 
 	# We need a list of all short names, all long names and all 
@@ -336,7 +339,7 @@ def PrintHelp(args):
 
 	names_width = 4 + short_name_width + 2 + long_name_width + 4
 
-	help_str  = 'Usage: python3 %s [options]\n\n'%program_name
+	help_str  = 'Usage: python3 %s [-g] [-t] [other options]\n\n'%program_name
 	help_str += 'options:\n'
 	for sname, lname, desc in zip(short_names, long_names, descriptions):
 		sdiff = short_name_width - len(sname)
@@ -395,10 +398,6 @@ def ValidateArgs(args):
 		print("Negative thread count specified.")
 		return 1
 
-	if args.verbosity < 0:
-		print("Negative verbosity specified.")
-		return 1
-
 	if args.log_path != "":
 		try:
 			with open(args.log_path, 'w') as file:
@@ -409,6 +408,11 @@ def ValidateArgs(args):
 			print("The log file does not appear to be writable.")
 			return 1
 
+	if not args.run_training and not args.generate_training_set:
+		print("No task was specified. Use -g and/or -t.\n")
+		PrintHelp(None)
+		return 1
+
 	if args.neural_network_in == "":
 		msg  = "No input neural net was specified. Please specify one via "
 		msg += "either the configuration value \'neural_network_in\' or one of the "
@@ -416,7 +420,7 @@ def ValidateArgs(args):
 		msg += "\t--network-input-file=<nn file>\n"
 		msg += "\t-e=<nn file>\n\n"
 		print(msg)
-		PrintHelp()
+		PrintHelp(None)
 		return 1
 
 	if not os.path.isfile(args.neural_network_in):
@@ -431,29 +435,18 @@ def ValidateArgs(args):
 		return 1
 
 	if args.generate_training_set:
-		# If both options are specified, that doesn't really make sense.
-		if args.dft_input_directory != "" and args.dft_input_file != "":
-			msg  = "Both dft_input_directory and dft_input_file were specified."
-			msg += "It only makes sense to have one or the other. If you have "
-			msg += "one specified in the config file and one specified on the "
-			msg += "command line, set the one that you don't want to use to an "
-			msg += "empty string like so -> \n\t--dft-directory=\"\" or \n"
-			msg += "\t--dft-file=\"\"\n\n"
-			print(msg)
-			PrintHelp()
-			return 1
+		
 
 		# If the system is generating a training set and neither option is 
 		# specified, this doesn't make sense.
-		if args.dft_input_directory == "" and args.dft_input_file == "":
+		if args.dft_input_file == "":
 			msg  = "You have configured the program to generate a training set"
-			msg += "but neither dft_input_directory nor dft_input_file has been"
-			msg += "specified. Please specify them in the config file or use "
-			msg += "one of the following options: \n"
-			msg += "\t--dft-directory=<some directory>\n"
+			msg += "but not specified a value for dft_input_file. "
+			msg += "Please specify it in the config file or use "
+			msg += "the following option: \n"
 			msg += "\t--dft-file=<some file>\n\n"
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		if args.training_set_output_file == "":
@@ -463,7 +456,7 @@ def ValidateArgs(args):
 			msg += "\t--training-set-out=<some file to write>\n"
 			msg += "\t-a=<some file to write>\n\n"
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		if os.path.isfile(args.training_set_output_file):
@@ -498,43 +491,6 @@ def ValidateArgs(args):
 				print("Could not read the specified dft input file.")
 				return 1
 
-		if args.dft_input_directory != "":
-			if args.dft_input_directory[-1] != '/':
-				args.dft_input_directory += '/'
-			# Make sure it exists, contains at least one file with the extenstion
-			# .poscar and that all files with that extension are readable.
-
-			if not os.path.isdir(args.dft_input_directory):
-				print("The specified dft input directory does not exist.")
-				return 1
-
-			try:
-				contents = os.listdir(args.dft_input_directory)
-			except:
-				print("The specified dft input directory was inaccessible.")
-
-			poscar_files = []
-			for c in contents:
-				if c.split('.')[-1].lower() == 'poscar':
-					poscar_files.append(c)
-
-			if len(poscar_files) == 0:
-				msg  = "There don\'t appear to be any poscar files in the "
-				msg += "specified dft input directory. This program expects "
-				msg += "all poscar files to have the .poscar extension."
-				print(msg)
-				return 1
-
-			for fname in poscar_files:
-				full_name =  args.dft_input_directory + fname
-				try:
-					with open(full_name, 'r') as file:
-						file.read(1)
-				except:
-					msg = "could not read the dft input file %s"%full_name
-					print(msg)
-					return 1
-
 	if args.run_training:
 		if args.training_iterations < 0:
 			print("Negative number of training iterations specified.")
@@ -547,7 +503,7 @@ def ValidateArgs(args):
 			msg += "\t--training-set-in=<training set file>\n"
 			msg += "\t-s=<training set file>\n\n"
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		if args.neural_network_out == "":
@@ -557,7 +513,7 @@ def ValidateArgs(args):
 			msg += "\t--network-output-file=<nn file>\n"
 			msg += "\t-y=<nn file>\n\n"
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		# Make sure the input files are there and readable. Also make sure that
@@ -607,7 +563,7 @@ def ValidateArgs(args):
 				msg += "backup interval to 0 or specify a value for "
 				msg += "network_backup_dir in the config file."
 				print(msg)
-				PrintHelp()
+				PrintHelp(None)
 				return 1
 
 			if args.network_backup_dir[-1] != '/':
@@ -658,7 +614,7 @@ def ValidateArgs(args):
 			msg += "network. Please specify a value for \'loss_log_path\' in "
 			msg += "the config file."
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		if args.validation_log_path == "":
@@ -666,7 +622,7 @@ def ValidateArgs(args):
 			msg += "neural network. Please specify a value for \'loss_log_path\' "
 			msg += "in the config file."
 			print(msg)
-			PrintHelp()
+			PrintHelp(None)
 			return 1
 
 		if args.energy_volume_file != "":
@@ -754,7 +710,7 @@ argument_specification = {
 		'long_name'        : '--config-file',
 		'type'             : 'string',
 		'predicate'        : None,
-		'description'      : 'The configuration file to use. Default is pyfit_config.json.',
+		'description'      : 'The configuration file to use. Default is _pyfit_config.json.',
 		'long_description' : None,
 		'examples'         : []
 	},
@@ -763,7 +719,7 @@ argument_specification = {
 		'long_name'        : '--generate-training-set',
 		'type'             : 'flag',
 		'predicate'        : None,
-		'description'      : 'When specified, the program will generate a training set file',
+		'description'      : 'When specified, the program will generate a training set file.',
 		'long_description' : None,
 		'examples'         : []
 	},
@@ -776,21 +732,12 @@ argument_specification = {
 		'long_description' : None,
 		'examples'         : []
 	},
-	'dft_input_directory' : {
-		'short_name'       : '-d',
-		'long_name'        : '--dft-directory',
-		'type'             : 'string',
-		'predicate'        : 'generate_training_set',
-		'description'      : 'The directory that contains the poscar files.',
-		'long_description' : None,
-		'examples'         : []
-	},
 	'dft_input_file' : {
 		'short_name'       : '-f',
 		'long_name'        : '--dft-file',
 		'type'             : 'string',
 		'predicate'        : 'generate_training_set',
-		'description'      : 'The file that contains the poscar data.',
+		'description'      : 'The file that contains the dft data.',
 		'long_description' : None,
 		'examples'         : []
 	},
@@ -862,7 +809,7 @@ argument_specification = {
 		'long_name'        : '--gpu-affinity',
 		'type'             : 'int',
 		'predicate'        : 'run_training',
-		'description'      : 'Train the network on the specified gpu (index)',
+		'description'      : 'Train the network on the specified gpu (index).',
 		'long_description' : None,
 		'examples'         : []
 	},
@@ -871,17 +818,9 @@ argument_specification = {
 		'long_name'        : '--n-threads',
 		'type'             : 'int',
 		'predicate'        : None,
-		'description'      : 'Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.',
-		'long_description' : None,
+		'description'      : 'Force operations to use only this many threads.',
+		'long_description' : 'Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.',
 		'examples'         : []
-	},
-	'verbosity' : {
-		'short_name'       : '-v',
-		'long_name'        : '--verbosity',
-		'type'             : 'int',
-		'predicate'        : None,
-		'description'      : 'How verbose the output of the program should be. Default is 1. 0 means don\'t print anything. Values above 4 are treated as 4.',
-		'long_description' : None,
 	},
 	'log_path' : {
 		'type'        : 'string',

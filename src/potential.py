@@ -29,8 +29,6 @@ class NetworkPotential:
 			self.config.max_random, 
 			n_values
 		).tolist()
-		
-		self.config.randomize = False
 
 	def loadFromFile(self, file_path):
 		with open(file_path, 'r') as file:
@@ -43,11 +41,12 @@ class NetworkPotential:
 		cells = [self._getCellsFromLine(line) for line in lines]
 
 		# send the header to the appropriate class for parsing
-		self.config = PotentialConfig('\n'.join(lines[:8]))
+		self.config = PotentialConfig().loadFromText('\n'.join(lines[:8]))
 
 		if self.config.randomize:
 			self.randomizeNetwork()
-			
+		
+
 		# If the network needed to be randomized, then the weight and bias
 		# values are already loaded into the flat array.
 		self._loadNetwork(
@@ -56,6 +55,7 @@ class NetworkPotential:
 		)
 
 		if self.config.randomize:
+			self.config.randomize = False
 			self.writeNetwork(file_path)
 
 		return self

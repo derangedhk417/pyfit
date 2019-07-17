@@ -2,12 +2,12 @@
 // variables that need to be specified. Despite the fact that c-style comments
 // are not part of the json spec, you can add them here (not multiline ones).
 {
-	"generate_training_set"       : false,
-	"training_set_output_file"    : "",
-	"dft_input_file"              : "",
+	"generate_training_set"       : true,
+	"training_set_output_file"    : "test.lsparam.dat",
+	"dft_input_file"              : "../test/input/ab.poscar.dat",
 	"run_training"                : false,
 	"training_set_in"             : "",
-	"neural_network_in"           : "",
+	"neural_network_in"           : "../test/nn/00.nn.dat",
 	"neural_network_out"          : "",
 	"training_iterations"         : 1,
 	"randomize"                   : false,
@@ -15,7 +15,7 @@
 	"gpu_affinity"                : 0,
 	"thread_count"                : 0,
 	"log_path"                    : "pyfit_log.txt",
-	"div_by_r0_squared"           : false,
+	"div_by_r0_squared"           : true,
 	"e_shift"                     : 0.795023,
 	"network_backup_dir"          : "backup",
 	"network_backup_interval"     : 0,

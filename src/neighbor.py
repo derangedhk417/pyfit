@@ -2,6 +2,7 @@
 # This file contains a simple function that takes poscar data and configuration
 # information and returns a neighbor list structure. See below for format.
 
+import numpy as np
 from util import ProgressBar
 
 # This first argument to this function should pretty much always be the 

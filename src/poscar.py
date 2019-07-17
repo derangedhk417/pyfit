@@ -2,6 +2,7 @@
 # The file contains code for loading poscar data files. It converts them into
 # a structure that is ready for use in neural network training.
 
+import numpy as np
 from util import ProgressBar
 
 # Designed to load a poscar data file or set of poscar data files. Takes

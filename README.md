@@ -44,3 +44,4 @@ This will initialize an interactive console at that line of code and allow you t
 15) Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().
 16) Handle cpu vs. gpu, as well as thread count and gpu affinity
 17) Add --slurm option, where the system will automatically pick cpu vs. gpu as well as thread count and affinity based on environment variables.
+18) Move the argument and config specification structure to a json file.

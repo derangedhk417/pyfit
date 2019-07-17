@@ -92,5 +92,4 @@ if __name__ == '__main__':
 	# multiple runs.
 	# import pyfit
 	# pyfit.RunPyfit(my_arg_structure)
-	return RunPyfit(config)
-	
+	RunPyfit(config)

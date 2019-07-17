@@ -1,5 +1,7 @@
 # Authors: Adam Robinson, James Hickman
 import os
+import sys
+import numpy as np
 from datetime import datetime
 
 # Returns the dimensions of the current terminal window or a good guess if 
