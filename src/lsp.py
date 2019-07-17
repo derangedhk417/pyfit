@@ -99,6 +99,7 @@ def computeParameters(neighbors, potential_config, sys_config):
 	# angular values now holds an array of cos(theta_ijk) for all unique i, j.
 
 	# Next, we need to compute and array of radial terms for each r0 value.
+	# TODO: Make sure this is right.
 	s2 = 1.0/(potential_config.gi_sigma**2)
 
 	# This is an array of all radial terms for 

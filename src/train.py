@@ -11,6 +11,8 @@ import torch
 import torch.nn    as nn
 import torch.optim as optim
 
+from copy import deepcopy
+
 # Given a training set file and a validation ratio, this class will construct
 # a set of torch tensors that are necessary to send input to the neural 
 # network and to compute its loss. This includes the following structures:
@@ -107,12 +109,14 @@ class TorchTrainingData:
 		self.train_lsp         = training_tensors[2]
 		self.train_n_inputs    = training_tensors[3]
 		self.train_reduction   = training_tensors[4]
+		self.train_volumes     = training_tensors[5]
 
 		self.val_energies    = validation_tensors[0]
 		self.val_reciprocals = validation_tensors[1]
 		self.val_lsp         = validation_tensors[2]
 		self.val_n_inputs    = validation_tensors[3]
 		self.val_reduction   = validation_tensors[4]
+		self.val_volumes     = validation_tensors[5]
 
 	# This function is meant to be called on a set of training structures once
 	# the training and validation structures have been separated.
@@ -125,6 +129,10 @@ class TorchTrainingData:
 		energies = [s[0].structure_energy for s in structures]
 		energies = torch.tensor(energies, dtype=self.tensor_type)
 		energies = energies.transpose()
+
+		# This doesn't get used for training, so we can keep it as a python
+		# array.
+		volumes = [s[0].structure_energy for s in structures]
 
 		reciprocals = [1.0 / s[0].structure_n_atoms for s in structures]
 		reciprocals = torch.tensor(reciprocals, dtype=self.tensor_type)
@@ -162,7 +170,8 @@ class TorchTrainingData:
 			reciprocals,
 			lsp,
 			n_inputs,
-			reduction
+			reduction,
+			volumes
 		)
 
 # This is the structure that actually gets used for the training process.
@@ -272,7 +281,9 @@ class Trainer:
 		# a loss calculating function, some tensors for that function,
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
-
+		self.training_set    = training_set
+		self.potential       = network_potential
+		self.network_out     = config.neural_network_out
 		self.iterations      = config.training_iterations
 		self.cpu             = config.force_cpu
 		self.gpu             = config.gpu_affinity
@@ -347,7 +358,6 @@ class Trainer:
 	# structure. This includes writing output files, training the network,
 	# etc.
 	def train(self):
-		self.terminated_early  = False
 		self.training_losses   = np.zeros(self.iterations)
 		self.validation_losses = np.zeros(self.iterations // self.val_interval)
 
@@ -362,14 +372,49 @@ class Trainer:
 		except KeyboardInterrupt as kb:
 			# This most likely means the user wants early termination
 			# to occur. 
-			self.terminated_early = True
+			print("Detected keyboard interrupt, cleaning up . . .")
+
 
 		# The training is over. Now we write all of the appropriate output 
 		# files.
 
+		# Write the loss file.
+		with open(self.loss_log, 'w', 1024*10) as file:
+			for i in range(self.training_losses.shape[0]):
+				file.write('%06i %.10E\n'%(i, self.training_losses[i]))
+
+		# Write the validation file.
+		if self.val_interval != 0:
+			with open(self.val_log, 'w', 1024*10) as file:
+				for i in range(self.validation_losses.shape[0]):
+					line  = '%06i %.10E\n'
+					line %= (i * self.val_interval, self.training_losses[i])
+					file.write(line)
+
+		# Write the energy vs. volume file.
+		if self.energy_interval != 0:
+			with open(self.energy_file, 'w', 1024*10) as file:
+				# The first line should be the volume of each structure in
+				# order. All subsequent lines should be an iteration and then
+				# the energy of each structure in order.
+				volumes = self.dataset.train_volumes
+				vol_str = ' '.join([str(v) for v in volumes])
+				file.write('training_index %s\n'%vol_str)
+
+				for i in range(self.energies.shape[0]):
+					energy_str  = ' '.join([str(e) for e in self.energies[i]])
+					line        = '%06i %s\n'
+					line       %= (i * self.energy_interval, energy_str)
+					file.write(line)
+
+		# Write the final neural network file.
+		layers = self.nn.getNetworkValues()
+		tmp    = deepcopy(self.potential)
+		tmp.layers = layers
+		tmp.writeNetwork(self.network_out)
 
 
-
+	# This is the loop that handles the actual training.
 	def _train_loop(self):
 		while self.iteration < self.iterations:
 			# Perform an evaluate and correct step, while storing
@@ -388,5 +433,14 @@ class Trainer:
 				if self.iteration % self.energy_interval == 0:
 					idx = self.iteration // self.energy_interval
 					self.energies[idx, :] = self.get_structure_energies()
+
+			if self.backup_interval != 0:
+				if self.iteration % self.backup_interval == 0:
+					idx    = self.iteration // self.backup_interval
+					path   = self.backup_dir + 'nn_bk_%05i.nn.dat'%idx
+					layers = self.nn.getNetworkValues()
+					tmp    = deepcopy(self.potential)
+					tmp.layers = layers
+					tmp.writeNetwork(path)
 
 			self.iteration += 1
