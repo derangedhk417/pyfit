@@ -7,7 +7,7 @@
 import numpy as np
 
 # this parses and stores the header information
-from config import NetworkConfig
+from config import PotentialConfig
 
 class NetworkPotential:
 	def __init__(self):
@@ -32,12 +32,18 @@ class NetworkPotential:
 		
 		self.config.randomize = False
 
+	def loadFromFile(self, file_path):
+		with open(file_path, 'r') as file:
+			text = file.read()
+
+		return self.loadFromText(text)
+
 	def loadFromText(self, text):
 		lines = text.rstrip().split('\n')
-		cells = [self.getCellsFromLine(line) for line in lines]
+		cells = [self._getCellsFromLine(line) for line in lines]
 
 		# send the header to the appropriate class for parsing
-		self.config = NetworkConfig('\n'.join(lines[:8]))
+		self.config = PotentialConfig('\n'.join(lines[:8]))
 
 		if self.config.randomize:
 			self.randomizeNetwork()
@@ -48,6 +54,8 @@ class NetworkPotential:
 			lines, 
 			values_loaded=self.config.randomize
 		)
+
+		return self
 
 	# Writes the network to a file.
 	def writeNetwork(self, path):

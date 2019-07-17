@@ -3,7 +3,7 @@
 # present in training set files and neural network files.
 
 # WARNING: __eq__ is overridden for this class.
-class NetworkConfig:
+class PotentialConfig:
 	def __init__(self):
 		pass
 

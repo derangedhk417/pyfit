@@ -63,7 +63,7 @@ def computeParameters(neighbors, potential_config, sys_config):
 	# compared to [1, 0]. More specifically, a different
 	# order does not make the pair unique.
 
-	grid         = np.mgrid[0:atom.shape[0], 0:atom.shape[0]]
+	grid         = np.mgrid[0:neighbors.shape[0], 0:neighbors.shape[0]]
 	grid         = grid.swapaxes(0, 2).swapaxes(0, 1)
 	m            = grid.shape[0]
 	r, c         = np.triu_indices(m, 1)

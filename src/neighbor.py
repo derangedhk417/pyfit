@@ -9,8 +9,6 @@ from util import ProgressBar
 # network potential that this is being generated for.
 def GenerateNeighborList(structures, potential):
 	
-	structures = poscar.structures
-	
 	# For each atom within each structure, we need to generate a list
 	# of atoms within the cutoff distance. Periodic images need to be
 	# accounted for during this process. Neighbors in this list are
