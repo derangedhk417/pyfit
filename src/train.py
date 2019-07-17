@@ -8,10 +8,11 @@
 # dumping error information during the training.
 
 import torch
-import torch.nn as nn
+import torch.nn    as nn
+import torch.optim as optim
 
 # Given a training set file and a validation ratio, this class will construct
-# a set of torch tensors that are necessary to send inpute to the neural 
+# a set of torch tensors that are necessary to send input to the neural 
 # network and to compute its loss. This includes the following structures:
 #     1) The actual energy of each structure.
 #     2) An array of the reciprocal number of atoms in each structure.
@@ -75,6 +76,14 @@ class TorchTrainingData:
 
 			val_indices = [i for i in indices if i not in train_indices]
 
+			if len(val_indices) == 0:
+				msg  = "The validation quantity was so small that none of "
+				msg += "the structure \'%s\' was included in the validation "
+				msg += "data set.\nExiting . . . "
+				msg %= group_names[idx]
+				print(msg)
+				exit(1)
+
 			# We now have a list of structure indices within this group
 			# that need to be used to generate training data and a list that
 			# need to be used to generate validation data.
@@ -90,8 +99,20 @@ class TorchTrainingData:
 		# process.
 
 		# These two tuples are the primary result of this class.
-		self.training_tensors   = self._getTensors(training)
-		self.validation_tensors = self._getTensors(validation)
+		training_tensors   = self._getTensors(training)
+		validation_tensors = self._getTensors(validation)
+
+		self.train_energies    = training_tensors[0]
+		self.train_reciprocals = training_tensors[1]
+		self.train_lsp         = training_tensors[2]
+		self.train_n_inputs    = training_tensors[3]
+		self.train_reduction   = training_tensors[4]
+
+		self.val_energies    = validation_tensors[0]
+		self.val_reciprocals = validation_tensors[1]
+		self.val_lsp         = validation_tensors[2]
+		self.val_n_inputs    = validation_tensors[3]
+		self.val_reduction   = validation_tensors[4]
 
 	# This function is meant to be called on a set of training structures once
 	# the training and validation structures have been separated.
@@ -227,4 +248,145 @@ class TorchNetwork(nn.Module):
 		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
 
+	def setReductionMatrix(self, matrix):
+		self.reduction_matrix = matrix
 
+# This class ties everything together and performs the actual training,
+# progress reporting and saving of the resulting files. I considered making
+# this a few functions instead of a class, but it occured to me that making
+# it into a class would allow me to pretty easily create a stop and resume
+# functionality where the entire training process gets saved to disk and 
+# loaded from disk in order to resume. I've experienced cases where I 
+# underestimated the amount of ram necessary and crashed the training because
+# I launched something else midway through. This feature would also be useful
+# for people who have a limit on the length of jobs they can run on clusters.
+# 
+# TODO: Implement pickling and unpickling of this class, as well as resuming
+#       training from where the process left off.
+class Trainer:
+	# The last argument is the config structure generated when the program
+	# parses its command line arguments. You can also just as easily make
+	# your own if you want to call this code from another program.
+	def __init__(self, network_potential, training_set, config):
+		# In order to actually train a network, we need an optimizer,
+		# a loss calculating function, some tensors for that function,
+		# a set of inputs and some parameters for how to run the training.
+		# The following code sets that up.
+
+		self.iterations      = config.training_iterations
+		self.cpu             = config.force_cpu
+		self.gpu             = config.gpu_affinity
+		self.threads         = config.thread_count
+		self.backup_dir      = config.network_backup_dir
+		self.backup_interval = config.network_backup_interval
+		self.loss_log        = config.loss_log_path
+		self.val_log         = config.validation_log_path
+		self.val_interval    = config.validation_interval
+		self.energy_file     = config.energy_volume_file
+		self.energy_interval = config.energy_volume_interval
+		self.learning_rate   = config.learning_rate
+		self.max_lbfgs       = config.max_lbfgs_iterations
+
+		# Setup the training and validation structures.
+		self.dataset = TorchTrainingData(
+			training_set,
+			config.validation_ratio
+		)
+
+		# To start, initialize the network with the training set reduction 
+		# matrix. This will get switched out temporarily when computing
+		# the validation loss.
+		self.nn = TorchNetwork(network_potential, self.dataset.train_reduction)
+
+		self.optimizer = optim.LBFGS(
+			self.nn.getParameters(), 
+			lr=self.learning_rate, 
+			max_iter=self.max_lbfgs
+		)
+
+	def loss(self):
+		output = self.nn(self.dataset.train_lsp)
+
+		diff        = output - self.dataset.train_energies
+		diff_scaled = torch.mul(diff, self.dataset.train_reciprocals)
+		sqr_sum     = (diff_scaled**2).sum()
+		sqr_sum    /= self.dataset.train_n_inputs
+		rmse        = torch.sqrt(sqr_sum)
+		return rmse
+
+	def validation_loss(self):
+		with torch.no_grad():
+			self.nn.setReductionMatrix(self.dataset.val_reduction)
+			output = self.nn(self.dataset.val_lsp)
+
+			diff        = output - self.dataset.val_energies
+			diff_scaled = torch.mul(diff, self.dataset.val_reciprocals)
+			sqr_sum     = (diff_scaled**2).sum()
+			sqr_sum    /= self.dataset.val_n_inputs
+			rmse        = torch.sqrt(sqr_sum)
+			self.nn.setReductionMatrix(self.dataset.train_reduction)
+			return rmse.cpu().item()
+
+	def get_structure_energies(self):
+		with torch.no_grad():
+			output = self.nn(self.dataset.train_lsp)
+			return output.cpu().numpy()
+
+	def training_closure(self):
+		self.optimizer.zero_grad()
+		loss = self.loss()
+
+		# Store the loss in the array.
+		self.training_losses[self.iteration] = loss.cpu().item()
+
+		loss.backward()
+		return loss
+
+
+	# Performs the full training process, as specified in the supplied config
+	# structure. This includes writing output files, training the network,
+	# etc.
+	def train(self):
+		self.terminated_early  = False
+		self.training_losses   = np.zeros(self.iterations)
+		self.validation_losses = np.zeros(self.iterations // self.val_interval)
+
+		energy_saves           = self.iterations // self.energy_interval
+		n_structures           = self.dataset.train_reduction.shape[0]
+		self.energies          = np.zeros((energy_saves, n_structures))
+		self.iteration         = 0
+
+		# Here we begin the actual training loop.
+		try:
+			self._train_loop()
+		except KeyboardInterrupt as kb:
+			# This most likely means the user wants early termination
+			# to occur. 
+			self.terminated_early = True
+
+		# The training is over. Now we write all of the appropriate output 
+		# files.
+
+
+
+
+	def _train_loop(self):
+		while self.iteration < self.iterations:
+			# Perform an evaluate and correct step, while storing
+			# the resulting loss in self.training_losses.
+			self.optimizer.step(self.training_closure)
+
+			# The following lines figure out if we have reached an iteration 
+			# where validation information or volume vs. energy information 
+			# needs to be stored.
+			if self.val_interval != 0:
+				if self.iteration % self.val_interval == 0:
+					idx = self.iteration // self.validation_interval
+					self.validation_losses[idx] = self.validation_loss()
+
+			if self.energy_interval != 0:
+				if self.iteration % self.energy_interval == 0:
+					idx = self.iteration // self.energy_interval
+					self.energies[idx, :] = self.get_structure_energies()
+
+			self.iteration += 1

@@ -714,6 +714,11 @@ def ValidateArgs(args):
 			print("The max_lbfgs_iterations value is illogical.")
 			return 1
 
+		if args.validation_ratio == 1.0 and args.validation_interval != 0:
+			msg = "No validation data used, but validation interval specified."
+			print(msg)
+			return 1
+
 	return 0
 
 

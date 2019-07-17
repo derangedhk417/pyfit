@@ -39,3 +39,6 @@ This will initialize an interactive console at that line of code and allow you t
 10) Make periodic structure generation in neighbor.py more efficient.
 11) Add isinstance checks on certain functions to ensure that arguments are of the correct type.
 12) Implement a .to method in all classes that store tensors.
+13) Decide how to approach logging, without cluttering the code too much.
+14) Implement randomize option.
+15) Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().
