@@ -36,9 +36,9 @@ class NetworkPotential:
 		with open(file_path, 'r') as file:
 			text = file.read()
 
-		return self.loadFromText(text)
+		return self.loadFromText(text, file_path)
 
-	def loadFromText(self, text):
+	def loadFromText(self, text, file_path):
 		lines = text.rstrip().split('\n')
 		cells = [self._getCellsFromLine(line) for line in lines]
 
@@ -47,13 +47,16 @@ class NetworkPotential:
 
 		if self.config.randomize:
 			self.randomizeNetwork()
-		
+			
 		# If the network needed to be randomized, then the weight and bias
 		# values are already loaded into the flat array.
 		self._loadNetwork(
 			lines, 
 			values_loaded=self.config.randomize
 		)
+
+		if self.config.randomize:
+			self.writeNetwork(file_path)
 
 		return self
 

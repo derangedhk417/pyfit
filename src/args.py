@@ -409,6 +409,27 @@ def ValidateArgs(args):
 			print("The log file does not appear to be writable.")
 			return 1
 
+	if args.neural_network_in == "":
+		msg  = "No input neural net was specified. Please specify one via "
+		msg += "either the configuration value \'neural_network_in\' or one of the "
+		msg += "following arguments:\n"
+		msg += "\t--network-input-file=<nn file>\n"
+		msg += "\t-e=<nn file>\n\n"
+		print(msg)
+		PrintHelp()
+		return 1
+
+	if not os.path.isfile(args.neural_network_in):
+		print("The specified input neural network does not exist.")
+		return 1
+
+	try:
+		with open(args.neural_network_in, 'r') as file:
+			file.read(1)
+	except:
+		print("Could not read the specified neural net input file.")
+		return 1
+
 	if args.generate_training_set:
 		# If both options are specified, that doesn't really make sense.
 		if args.dft_input_directory != "" and args.dft_input_file != "":
@@ -529,16 +550,6 @@ def ValidateArgs(args):
 			PrintHelp()
 			return 1
 
-		if args.neural_network_in == "":
-			msg  = "No input neural net was specified. Please specify one via "
-			msg += "either the configuration value \'neural_network_in\' or one of the "
-			msg += "following arguments:\n"
-			msg += "\t--network-input-file=<nn file>\n"
-			msg += "\t-e=<nn file>\n\n"
-			print(msg)
-			PrintHelp()
-			return 1
-
 		if args.neural_network_out == "":
 			msg  = "No output neural net was specified. Please specify one via "
 			msg += "either the configuration value \'neural_network_out\' or one of the "
@@ -553,26 +564,26 @@ def ValidateArgs(args):
 		# the output file doesn't already exist.
 
 		if not os.path.isfile(args.training_set_in):
-			print("The specified training set file does not exist.")
-			return 1
+			# It's ok if the training set doesn't exist, as long as 
+			# we are about to generate it.
+			ok  = args.generate_training_set
+			ok &= args.training_set_output_file == args.training_set_in
 
-		if not os.path.isfile(args.neural_network_in):
-			print("The specified input neural network does not exist.")
-			return 1
+			if not ok:
+				print("The specified training set file does not exist.")
+				return 1
+
+		
 
 		try:
-			with open(args.training_set_in, 'r') as file:
-				file.read(1)
+			if os.path.isfile(args.training_set_in):
+				with open(args.training_set_in, 'r') as file:
+					file.read(1)
 		except:
 			print("Could not read the specified training set input file.")
 			return 1
 
-		try:
-			with open(args.neural_network_in, 'r') as file:
-				file.read(1)
-		except:
-			print("Could not read the specified neural net input file.")
-			return 1
+		
 
 		if os.isfile(args.neural_network_out):
 			print("The specified neural network output file already exists.")

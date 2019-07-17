@@ -6,10 +6,16 @@
 import os
 import sys
 import copy
-import torch
 import numpy as np
 
-from args import ParseArgs, ValidateArgs, PrintHelp
+from args         import ParseArgs, ValidateArgs, PrintHelp
+from config       import PotentialConfig
+from poscar       import PoscarLoader
+from potential    import NetworkPotential
+from training_set import TrainingSet
+from neighbor     import GenerateNeighborList
+from lsp          import GenerateLocalStructureParams
+from train        import Trainer
 
 def RunPyfit(config):
 	# Try to ensure that all of the configuration settings make sense. If the 
@@ -28,12 +34,50 @@ def RunPyfit(config):
 
 	# Now that basic configuration stuff is out of the way, we need to 
 	# generate a training set, train a neural network or both. 
-	#
-	# Note: To the extent that it is possible, all functionality in this
-	#       program is written so that it can take config = None as an
-	#       argument and will try to run without producing any output
-	#       text. This is so that the functionality in the system can
-	#       be directly called from elsewhere when useful.
+
+	potential    = None
+	training_set = None
+
+	if config.generate_training_set:
+		poscar_data = PoscarLoader(config.e_shift)
+		poscar_data = poscar_data.loadFromFile(config.dft_input_file)
+		potential   = NetworkPotential()
+		potential   = potential.loadFromFile(config.neural_network_in)
+
+		neighborLists = GenerateNeighborList(
+			poscar_data.structures,
+			potential
+		)
+
+		lsps = GenerateLocalStructureParams(
+			neighborLists,
+			potential.config,
+			config
+		)
+
+		training_set = TrainingSet().loadFromMemory(
+			poscar_data,
+			lsps,
+			potential
+		)
+
+		training_set.writeToFile(config.training_set_output_file)
+
+	if config.run_training:
+		# If we generated the training set in this run, then there was 
+		# already a validation check run to make sure that the generated
+		# training output file matches the training input file being used.
+		# Instead of loading from disk, just use the existing instance.
+		if not config.generate_training_set:
+			training_set = TrainingSet().loadFromFile(config.training_set_in)
+			potential    = potential.loadFromFile(config.neural_network_in)
+
+		# By this point, 'training_set' holds a training set instance, one way
+		# or another. Now we actually run the training.
+		trainer = Trainer(potential, training_set, config)
+
+		trainer.train()
+
 
 	
 
@@ -48,5 +92,5 @@ if __name__ == '__main__':
 	# multiple runs.
 	# import pyfit
 	# pyfit.RunPyfit(my_arg_structure)
-	RunPyfit(config)
+	return RunPyfit(config)
 	

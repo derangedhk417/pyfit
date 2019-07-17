@@ -18,7 +18,7 @@
 	"verbosity"                   : 1,
 	"log_path"                    : "pyfit_log.txt",
 	"div_by_r0_squared"           : false,
-	"e_shift"                     : 0.79,
+	"e_shift"                     : 0.795023,
 	"network_backup_dir"          : "backup",
 	"network_backup_interval"     : 0,
 	"loss_log_path"               : "loss.txt",

@@ -13,7 +13,7 @@ from util import ProgressBar
 # Once data is loaded, this class can be used as an iterable, returning
 # an instance of PoscarStructure for each structure loaded.
 class PoscarLoader:
-	def __init__(self, config, e_shift=None):
+	def __init__(self, e_shift):
 		self.e_shift   = e_shift
 		self.loaded    = False
 		self.iter      = None
@@ -22,12 +22,6 @@ class PoscarLoader:
 		self.n_structures = 0
 		self.structures   = []
 		self.all_comments = []
-
-		if config is None:
-			if e_shift is None:
-				raise Exception("Either config or e_shift must be specified.")
-		elif self.e_shift is None:
-			self.e_shift = config.e_shift
 
 	def loadFromFile(self, file_path):
 		with open(file_path, 'r') as file:
