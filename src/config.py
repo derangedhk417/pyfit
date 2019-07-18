@@ -78,7 +78,7 @@ class PotentialConfig:
 		if self.layer_sizes[0] != self.n_r0 * self.n_legendre_polynomials:
 			err  = "The input layer dimensions of the neural network do not "
 			err += "match the structural parameter dimensions."
-			raise ValueError()
+			raise ValueError(err)
 
 		return self
 

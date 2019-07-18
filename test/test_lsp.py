@@ -51,7 +51,7 @@ def compareInputs(new, old, i, j):
 		return False
 
 	# Decided not to compare volume. The old code appears
-	# to use a amore comlicted method to determine this.
+	# to use a a more complicted method to determine this.
 	# if new.structure_volume != old.structure_volume:
 	# 	err(new.structure_volume, old.structure_volume)
 	# 	return False

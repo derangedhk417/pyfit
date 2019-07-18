@@ -85,12 +85,20 @@ class TrainingSet:
 		# structure per iteration, each structure being an instance of
 		# poscar.py -> PoscarStructure
 		current_group_id = 1
+		max_group_id     = 1
 		current_group    = poscar.structures[0].comment
+		group_ids        = {current_group: 1}
 		for struct_idx, struct in enumerate(poscar):
 			group_name = struct.comment
 			if group_name != current_group:
-				current_group_id += 1
-				current_group     = group_name
+				if group_name in group_ids:
+					current_group_id = group_ids[group_name]
+					current_group    = group_name
+				else:
+					max_group_id     += 1
+					current_group_id  = max_group_id
+					current_group     = group_name
+					group_ids[group_name] = current_group_id
 
 			# This is divided by two to match previous code.
 			struct_volume = np.linalg.norm(
