@@ -791,7 +791,7 @@ argument_specification = {
 		'long_name'        : '--randomize-nn',
 		'type'             : 'flag',
 		'predicate'        : 'run_training',
-		'description'      : 'Randomize the neural network before training.',
+		'description'      : 'Randomize the neural network before training. Will not modify file.',
 		'long_description' : None,
 		'examples'         : []
 	},

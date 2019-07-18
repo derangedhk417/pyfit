@@ -105,12 +105,11 @@ class PoscarLoader:
 class PoscarStructure:
 	def __init__(self, lines, e_shift):
 		self.comment = lines[0]
-		self.scale_factor  = float(lines[1])
-		self.a1            = self._parseVector(lines[2], self.scale_factor)
-		self.a2            = self._parseVector(lines[3], self.scale_factor)
-		self.a3            = self._parseVector(lines[4], self.scale_factor)
-		self.n_atoms       = int(lines[5])
-		
+		self.scale_factor = float(lines[1])
+		self.a1           = self._parseVector(lines[2], self.scale_factor)
+		self.a2           = self._parseVector(lines[3], self.scale_factor)
+		self.a3           = self._parseVector(lines[4], self.scale_factor)
+		self.n_atoms      = int(lines[5])
 
 		if lines[6][0] == 'c':
 			self.is_cartesian = True

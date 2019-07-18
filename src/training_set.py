@@ -106,7 +106,7 @@ class TrainingSet:
 					np.cross(struct.a1, struct.a2),
 					struct.a3
 				)
-			) / 2
+			) / struct.n_atoms
 
 			training_input = TrainingInput()
 			training_input.group_name        = group_name

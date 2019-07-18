@@ -132,7 +132,10 @@ class TorchTrainingData:
 
 		# This doesn't get used for training, so we can keep it as a python
 		# array.
-		volumes = [s[0].structure_energy for s in structures]
+		volumes = []
+
+		for s in structures:
+			volumes.append(s[0].structure_volume)
 
 		reciprocals = [1.0 / s[0].structure_n_atoms for s in structures]
 		reciprocals = torch.tensor(reciprocals, dtype=self.tensor_type)
@@ -417,10 +420,6 @@ class Trainer:
 	# This is the loop that handles the actual training.
 	def _train_loop(self):
 		while self.iteration < self.iterations:
-			# Perform an evaluate and correct step, while storing
-			# the resulting loss in self.training_losses.
-			self.optimizer.step(self.training_closure)
-
 			# The following lines figure out if we have reached an iteration 
 			# where validation information or volume vs. energy information 
 			# needs to be stored.
@@ -442,5 +441,11 @@ class Trainer:
 					tmp    = deepcopy(self.potential)
 					tmp.layers = layers
 					tmp.writeNetwork(path)
+			
+			# Perform an evaluate and correct step, while storing
+			# the resulting loss in self.training_losses.
+			self.optimizer.step(self.training_closure)
+
+			
 
 			self.iteration += 1
