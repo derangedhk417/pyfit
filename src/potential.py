@@ -45,7 +45,6 @@ class NetworkPotential:
 
 		if self.config.randomize:
 			self.randomizeNetwork()
-		
 
 		# If the network needed to be randomized, then the weight and bias
 		# values are already loaded into the flat array.

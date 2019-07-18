@@ -82,7 +82,7 @@ class TorchTrainingData:
 
 			val_indices = [i for i in indices if i not in train_indices]
 
-			if len(val_indices) == 0:
+			if len(val_indices) == 0 and validation_ratio != 1.0:
 				msg  = "The validation quantity was so small that none of "
 				msg += "the structure \'%s\' was included in the validation "
 				msg += "data set.\nExiting . . . "
@@ -434,7 +434,7 @@ class Trainer:
 	def _train_loop(self):
 		progress = ProgressBar(
 			"Training ", 
-			22, self.iterations, update_every = 1
+			22, self.iterations + int(self.iterations == 0), update_every = 1
 		)
 
 		while self.iteration <= self.iterations:

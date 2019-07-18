@@ -155,7 +155,7 @@ if __name__ == '__main__':
 	# before wasting too much time.
 
 	for lsp, ref, nn in zip(lsparam_names[sk:], ref_names[sk:], nn_names[sk:]):
-		run_str  = 'python3 ../src/pyfit.py --config-file=test_config.json '
+		run_str  = 'python3 ../src/pyfit.py --config-file=lsp_config.json '
 		run_str += '--generate-training-set --dft-file=%s '
 		run_str += '--training-set-out=%s '
 		run_str += '--network-input-file=%s'
