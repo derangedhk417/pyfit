@@ -2,14 +2,14 @@
 // variables that need to be specified. Despite the fact that c-style comments
 // are not part of the json spec, you can add them here (not multiline ones).
 {
-	"generate_training_set"       : false,
-	"training_set_output_file"    : "test.lsparam.dat",
-	"dft_input_file"              : "../test/input/ab.poscar.dat",
+	"generate_training_set"       : true,
+	"training_set_output_file"    : "test.nogit.lsparam.dat",
+	"dft_input_file"              : "test/input/ab.poscar.dat",
 	"run_training"                : true,
-	"training_set_in"             : "test/ref/00.lsparam.dat",
-	"neural_network_in"           : "test/nn/00.nn.dat",
-	"neural_network_out"          : "test.nn.dat",
-	"training_iterations"         : 0,
+	"training_set_in"             : "test.nogit.lsparam.dat",
+	"neural_network_in"           : "test/nn/small.nn.dat",
+	"neural_network_out"          : "test.nogit.nn.dat",
+	"training_iterations"         : 30,
 	"randomize"                   : false,
 	"force_cpu"                   : false,
 	"gpu_affinity"                : 0,
@@ -18,12 +18,14 @@
 	"e_shift"                     : 0.795023,
 	"network_backup_dir"          : "backup",
 	"network_backup_interval"     : 5,
-	"loss_log_path"               : "loss.txt",
-	"validation_log_path"         : "validation.txt",
-	"validation_interval"         : 0,
-	"energy_volume_file"          : "ev.txt",
-	"energy_volume_interval"      : 4,
-	"validation_ratio"            : 1.0,
+	"loss_log_path"               : "loss.nogit.txt",
+	"validation_log_path"         : "validation.nogit.txt",
+	"validation_interval"         : 2,
+	"energy_volume_file"          : "ev.nogit.txt",
+	"energy_volume_interval"      : 15,
+	"validation_ratio"            : 0.95,
 	"learning_rate"               : 0.05,
-	"max_lbfgs_iterations"        : 10
+	"max_lbfgs_iterations"        : 10,
+	"no_warn"                     : false,
+	"overwrite"                   : false
 }

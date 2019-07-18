@@ -71,21 +71,24 @@ class TorchTrainingData:
 				training.append(sorted_group[0])
 				training.append(sorted_group[-1])
 
-				sorted_group = sorted_group[1:-1]
-				proper_ratio = validation_ratio - (2 / len(group))
-				indices      = np.arange(0, len(sorted_group))
+				if len(sorted_group) > 2:
+					sorted_group = sorted_group[1:-1]
+					proper_ratio = validation_ratio - (2 / len(group))
+					indices      = np.arange(0, len(sorted_group))
 
-				# Select this many structures from what remains.
-				training_to_select = min([
-					int(round(proper_ratio * len(group))),
-					len(sorted_group)
-				])
+					# Select this many structures from what remains.
+					training_to_select = min([
+						int(round(proper_ratio * len(group))),
+						len(sorted_group)
+					])
 
-				train_indices = np.random.choice(
-					indices, 
-					training_to_select, 
-					replace=False
-				)
+					train_indices = np.random.choice(
+						indices, 
+						training_to_select, 
+						replace=False
+					)
+				else:
+					train_indices = []
 
 			val_indices = [i for i in indices if i not in train_indices]
 

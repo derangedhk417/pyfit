@@ -2,6 +2,7 @@
 # This file contains classes and methods that assist in reading and writing
 # training set files in the custom format used for neural network potentials.
 
+import code
 import numpy as np
 
 # this parses and stores the header information
@@ -196,6 +197,34 @@ class TrainingSet:
 			result.append(current_group)
 
 		return result, group_names
+
+	# This function is designed to determine whether the training set can
+	# be reasonably split with the given training to validation ratio. If
+	# any group in the training set would have no validation data, this 
+	# will print a warning and return False. Otherwise, it will return True.
+	def generateWarnings(self, validation_ratio):
+		if validation_ratio == 1.0:
+			return True
+
+		for group, name in zip(*self.getAllByGroup()):
+			code.interact(local=locals())
+			sub_ratio = validation_ratio - (2 / len(group))
+
+			training_to_select = min([
+				int(round(sub_ratio * len(group))),
+				len(group) - 2
+			])
+
+			if len(group) - 2 - training_to_select == 0:
+				msg  = "Structural group \'%s\' is so small that the current "
+				msg += "validation ratio would result in it not having any "
+				msg += "validation data. Please either change the validation "
+				msg += "ratio or turn this warning off."
+				msg %= name
+				print(msg)
+				return False
+
+		return True
 
 	# Extracts all of the relevent cells of information from a line, split
 	# on ' ' characters. Also removes '#' characters.

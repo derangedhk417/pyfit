@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Authors: Adam Robinson, James Hickman
 # This file serves to process command line arguments, load the configuration 
 # file and call the appropriate functionality. The majority of the intensive
@@ -72,6 +73,10 @@ def RunPyfit(config):
 			training_set = TrainingSet().loadFromFile(config.training_set_in)
 			potential    = NetworkPotential()
 			potential    = potential.loadFromFile(config.neural_network_in)
+
+			if not config.no_warn:
+				if not training_set.generateWarnings(config.validation_ratio):
+					return 1
 
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.

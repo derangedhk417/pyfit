@@ -7,6 +7,7 @@ import copy
 import json
 import util
 import os
+import sys
 
 # Returns an object that contains the arguments to the program. Also 
 # ensures that all arguments are recognized and that arguments are not
@@ -151,9 +152,13 @@ def ParseArgs(arglist):
 # the values specified in the command line.
 # If --config-file (or -j) is 
 def combineArgsWithConfig(arg_dict):
+	config_default_path = sys.path[0]
+	if config_default_path[-1] != '/':
+		config_default_path += '/'
+
 	# Figure out where to load the config file from.
 	if 'config_file' not in arg_dict:
-		config_fpath = '_pyfit_config.json'
+		config_fpath = config_default_path + '_pyfit_config.json'
 	else:
 		config_fpath = arg_dict['config_file']
 
@@ -820,6 +825,24 @@ argument_specification = {
 		'predicate'        : None,
 		'description'      : 'Force operations to use only this many threads.',
 		'long_description' : 'Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.',
+		'examples'         : []
+	},
+	'no_warn' : {
+		'short_name'       : '-w',
+		'long_name'        : '--no-warn',
+		'type'             : 'flag',
+		'predicate'        : 'run_training',
+		'description'      : 'Don\'t issue a warning and continue training if the a structural group will not be represented in the validation data set.',
+		'long_description' : '',
+		'examples'         : []
+	},
+	'overwrite' : {
+		'short_name'       : '-o',
+		'long_name'        : '--overwrite',
+		'type'             : 'flag',
+		'predicate'        : None,
+		'description'      : 'Overwrite output files if they already exist. Use at your own risk.',
+		'long_description' : '',
 		'examples'         : []
 	},
 	'log_path' : {
