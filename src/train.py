@@ -7,11 +7,15 @@
 # function that trains the neural network, which includes functionality for
 # dumping error information during the training.
 
+import numpy       as np
 import torch
 import torch.nn    as nn
 import torch.optim as optim
 
 from copy import deepcopy
+from util import ProgressBar
+
+import code
 
 # Given a training set file and a validation ratio, this class will construct
 # a set of torch tensors that are necessary to send input to the neural 
@@ -27,7 +31,7 @@ from copy import deepcopy
 # for validation.
 class TorchTrainingData:
 	def __init__(self, training_set, validation_ratio):
-		self.tensor_type = torch.FloatTensor
+		self.tensor_type = torch.float32
 		self.np_type     = np.float32
 		# The first thing we need to do is split the training set data up into
 		# training and validation data. In order for the validation data to be
@@ -127,8 +131,8 @@ class TorchTrainingData:
 		n_structures      = len(structures)
 
 		energies = [s[0].structure_energy for s in structures]
-		energies = torch.tensor(energies, dtype=self.tensor_type)
-		energies = energies.transpose()
+		energies = torch.tensor([energies], dtype=self.tensor_type)
+		energies = energies.transpose(0, 1)
 
 		# This doesn't get used for training, so we can keep it as a python
 		# array.
@@ -138,10 +142,10 @@ class TorchTrainingData:
 			volumes.append(s[0].structure_volume)
 
 		reciprocals = [1.0 / s[0].structure_n_atoms for s in structures]
-		reciprocals = torch.tensor(reciprocals, dtype=self.tensor_type)
-		reciprocals = reciprocals.transpose()
+		reciprocals = torch.tensor([reciprocals], dtype=self.tensor_type)
+		reciprocals = reciprocals.transpose(0, 1)
 
-		lsp = np.array((n_atoms, n_params_per_atom), dtype=self.np_type)
+		lsp = np.zeros((n_atoms, n_params_per_atom), dtype=self.np_type)
 		idx = 0
 		for struct in structures:
 			for atom in struct:
@@ -180,9 +184,9 @@ class TorchTrainingData:
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
 	def __init__(self, network_potential, reduction_matrix):
-		super(TorchNet, self).__init__()
+		super(TorchNetwork, self).__init__()
 
-		tt = torch.FloatTensor
+		tt = torch.float32
 
 		# Here we need to instantiate and instance of a linear
 		# transformation for each real layer of the network and
@@ -194,7 +198,7 @@ class TorchNetwork(nn.Module):
 		# subsequent calls to TorchNet.parameters() will not work.
 		self.layers           = []
 		self.params           = nn.ParameterList()
-		self.activation_mode  = network_data.config.activation_function
+		self.activation_mode  = network_potential.config.activation_function
 		self.reduction_matrix = reduction_matrix
 		self.offset           = torch.tensor(0.5)
 		self.config           = network_potential.config
@@ -206,14 +210,14 @@ class TorchNetwork(nn.Module):
 				curr_layer_size = self.config.layer_sizes[idx]
 				layer           = nn.Linear(prev_layer_size, curr_layer_size)
 				current_layer   = network_potential.layers[idx - 1]
+				with torch.no_grad():
+					tmp_weight_tensor = [node[0] for node in current_layer]
+					tmp_weight_tensor = torch.tensor(tmp_weight_tensor, dtype=tt)
+					layer.weight.copy_(tmp_weight_tensor)
 
-				tmp_weight_tensor = [node[0] for node in current_layer]
-				tmp_weight_tensor = torch.tensor(tmp_weight_tensor, dtype=tt)
-				layer.weight.copy_(tmp_weight_tensor)
-
-				tmp_bias_tensor = [node[1] for node in current_layer]
-				tmp_bias_tensor = torch.tensor(tmp_bias_tensor, dtype=tt)
-				layer.bias.copy_(tmp_bias_tensor)
+					tmp_bias_tensor = [node[1] for node in current_layer]
+					tmp_bias_tensor = torch.tensor(tmp_bias_tensor, dtype=tt)
+					layer.bias.copy_(tmp_bias_tensor)
 
 				self.layers.append(layer)
 				self.params.extend(layer.parameters())
@@ -248,7 +252,7 @@ class TorchNetwork(nn.Module):
 	def forward(self, x):
 		# Activation mode 0 is regular sigmoid and mode 
 		# 1 is sigmoid shifted by -0.5
-		if self.config.activation_mode == 0:
+		if self.activation_mode == 0:
 			x0 = torch.sigmoid(self.layers[0](x))
 			for layer in self.layers[1:-1]:
 				x0 = torch.sigmoid(layer(x0))
@@ -343,15 +347,17 @@ class Trainer:
 
 	def get_structure_energies(self):
 		with torch.no_grad():
-			output = self.nn(self.dataset.train_lsp)
-			return output.cpu().numpy()
+			output  = self.nn(self.dataset.train_lsp)
+			output  = output.cpu().numpy().transpose()[0]
+			output *= self.reciprocals
+			return output
 
 	def training_closure(self):
 		self.optimizer.zero_grad()
 		loss = self.loss()
 
 		# Store the loss in the array.
-		self.training_losses[self.iteration] = loss.cpu().item()
+		self.last_loss = loss.cpu().item()
 
 		loss.backward()
 		return loss
@@ -361,13 +367,20 @@ class Trainer:
 	# structure. This includes writing output files, training the network,
 	# etc.
 	def train(self):
-		self.training_losses   = np.zeros(self.iterations)
-		self.validation_losses = np.zeros(self.iterations // self.val_interval)
+		self.training_losses   = np.zeros(self.iterations + 1)
 
-		energy_saves           = self.iterations // self.energy_interval
+		val_size               = (self.iterations // self.val_interval) + 1
+		self.validation_losses = np.zeros(val_size)
+
+		energy_saves           = (self.iterations // self.energy_interval) + 1
 		n_structures           = self.dataset.train_reduction.shape[0]
 		self.energies          = np.zeros((energy_saves, n_structures))
+		self.reciprocals       = self.dataset.train_reciprocals
+		self.reciprocals       = self.reciprocals.numpy().transpose()[0]
 		self.iteration         = 0
+
+		with torch.no_grad():
+			self.last_loss = self.loss().cpu().item()
 
 		# Here we begin the actual training loop.
 		try:
@@ -391,7 +404,7 @@ class Trainer:
 			with open(self.val_log, 'w', 1024*10) as file:
 				for i in range(self.validation_losses.shape[0]):
 					line  = '%06i %.10E\n'
-					line %= (i * self.val_interval, self.training_losses[i])
+					line %= (i * self.val_interval, self.validation_losses[i])
 					file.write(line)
 
 		# Write the energy vs. volume file.
@@ -419,23 +432,32 @@ class Trainer:
 
 	# This is the loop that handles the actual training.
 	def _train_loop(self):
-		while self.iteration < self.iterations:
+		progress = ProgressBar(
+			"Training ", 
+			22, self.iterations, update_every = 1
+		)
+
+		while self.iteration <= self.iterations:
+			progress.update(self.iteration)
+
+			self.training_losses[self.iteration] = self.last_loss
+
 			# The following lines figure out if we have reached an iteration 
 			# where validation information or volume vs. energy information 
 			# needs to be stored.
 			if self.val_interval != 0:
 				if self.iteration % self.val_interval == 0:
-					idx = self.iteration // self.validation_interval
+					idx  = (self.iteration // self.val_interval)
 					self.validation_losses[idx] = self.validation_loss()
 
 			if self.energy_interval != 0:
 				if self.iteration % self.energy_interval == 0:
-					idx = self.iteration // self.energy_interval
+					idx  = (self.iteration // self.energy_interval)
 					self.energies[idx, :] = self.get_structure_energies()
 
 			if self.backup_interval != 0:
 				if self.iteration % self.backup_interval == 0:
-					idx    = self.iteration // self.backup_interval
+					idx    = (self.iteration // self.backup_interval)
 					path   = self.backup_dir + 'nn_bk_%05i.nn.dat'%idx
 					layers = self.nn.getNetworkValues()
 					tmp    = deepcopy(self.potential)
@@ -446,6 +468,6 @@ class Trainer:
 			# the resulting loss in self.training_losses.
 			self.optimizer.step(self.training_closure)
 
-			
-
 			self.iteration += 1
+
+		progress.finish()

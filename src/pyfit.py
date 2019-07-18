@@ -70,6 +70,7 @@ def RunPyfit(config):
 		# Instead of loading from disk, just use the existing instance.
 		if not config.generate_training_set:
 			training_set = TrainingSet().loadFromFile(config.training_set_in)
+			potential    = NetworkPotential()
 			potential    = potential.loadFromFile(config.neural_network_in)
 
 		# By this point, 'training_set' holds a training set instance, one way

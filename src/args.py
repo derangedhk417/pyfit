@@ -541,7 +541,7 @@ def ValidateArgs(args):
 
 		
 
-		if os.isfile(args.neural_network_out):
+		if os.path.isfile(args.neural_network_out):
 			print("The specified neural network output file already exists.")
 			return 1
 
@@ -825,10 +825,6 @@ argument_specification = {
 	'log_path' : {
 		'type'        : 'string',
 		'description' : 'The path to the file to put logs into.'
-	},
-	'div_by_r0_squared' : {
-		'type'        : 'flag',
-		'description' : 'Whether or not to divide structural parameters by their corresponding value of r0 squared.'
 	},
 	'e_shift' : {
 		'type'        : 'float',

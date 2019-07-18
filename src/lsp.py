@@ -214,11 +214,9 @@ def computeParameters(neighbors, potential_config, sys_config):
 	# hyperparameter definition in the network potential file and the 
 	# configuration values specified in the config file.
 	if potential_config.gi_mode == 1:
-		if sys_config.div_by_r0_squared:
-			sp  = structural_parameters
-			sp /= np.square(np.tile(potential_config.r0, len_pm))
-		else:
-			sp = structural_parameters
+		sp  = structural_parameters
+		sp /= np.square(np.tile(potential_config.r0, len_pm))
+		
 		return np.log(sp + potential_config.gi_shift)
 	else:
 		sp = structural_parameters / 16.0
