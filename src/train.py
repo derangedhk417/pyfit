@@ -57,28 +57,35 @@ class TorchTrainingData:
 
 		for idx, group in enumerate(by_group):
 			# Sort the structures in the group by their volume.
-			sorted_group = sorted(group, key=lambda x: x[0].structure_volume)
-
-			# Now we remove the first and last indices and determine what 
-			# percentage of what remains needs to be selected for validation.
-			training.append(sorted_group[0])
-			training.append(sorted_group[-1])
-
-			sorted_group = sorted_group[1:-1]
-			proper_ratio = validation_ratio - (2 / len(group))
-
-			# Select this many structures from what remains.
-			training_to_select = min([
-				int(round(proper_ratio * len(group))),
-				len(sorted_group)
-			])
-
-			indices       = np.arange(0, len(sorted_group))
-			train_indices = np.random.choice(
-				indices, 
-				training_to_select, 
-				replace=False
+			sorted_group = sorted(
+				group, 
+				key=lambda x: x[0].structure_volume / x[0].structure_n_atoms
 			)
+
+			if validation_ratio == 1.0:
+				indices       = np.arange(0, len(sorted_group))
+				train_indices = indices
+			else:
+				# Now we remove the first and last indices and determine what 
+				# percentage of what remains needs to be selected for validation.
+				training.append(sorted_group[0])
+				training.append(sorted_group[-1])
+
+				sorted_group = sorted_group[1:-1]
+				proper_ratio = validation_ratio - (2 / len(group))
+
+				indices       = np.arange(0, len(sorted_group))
+
+				# Select this many structures from what remains.
+				training_to_select = min([
+					int(round(proper_ratio * len(group))),
+					len(sorted_group)
+				])
+				train_indices = np.random.choice(
+					indices, 
+					training_to_select, 
+					replace=False
+				)
 
 			val_indices = [i for i in indices if i not in train_indices]
 
@@ -106,7 +113,6 @@ class TorchTrainingData:
 
 		# These two tuples are the primary result of this class.
 		training_tensors   = self._getTensors(training)
-		validation_tensors = self._getTensors(validation)
 
 		self.train_energies    = training_tensors[0]
 		self.train_reciprocals = training_tensors[1]
@@ -115,12 +121,15 @@ class TorchTrainingData:
 		self.train_reduction   = training_tensors[4]
 		self.train_volumes     = training_tensors[5]
 
-		self.val_energies    = validation_tensors[0]
-		self.val_reciprocals = validation_tensors[1]
-		self.val_lsp         = validation_tensors[2]
-		self.val_n_inputs    = validation_tensors[3]
-		self.val_reduction   = validation_tensors[4]
-		self.val_volumes     = validation_tensors[5]
+		if validation_ratio != 1.0:
+			validation_tensors = self._getTensors(validation)
+
+			self.val_energies    = validation_tensors[0]
+			self.val_reciprocals = validation_tensors[1]
+			self.val_lsp         = validation_tensors[2]
+			self.val_n_inputs    = validation_tensors[3]
+			self.val_reduction   = validation_tensors[4]
+			self.val_volumes     = validation_tensors[5]
 
 	# This function is meant to be called on a set of training structures once
 	# the training and validation structures have been separated.
@@ -367,17 +376,19 @@ class Trainer:
 	# structure. This includes writing output files, training the network,
 	# etc.
 	def train(self):
-		self.training_losses   = np.zeros(self.iterations + 1)
+		self.training_losses = np.zeros(self.iterations + 1)
+		self.iteration       = 0
 
-		val_size               = (self.iterations // self.val_interval) + 1
-		self.validation_losses = np.zeros(val_size)
+		if self.val_interval != 0:
+			val_size               = (self.iterations // self.val_interval) + 1
+			self.validation_losses = np.zeros(val_size)
 
-		energy_saves           = (self.iterations // self.energy_interval) + 1
-		n_structures           = self.dataset.train_reduction.shape[0]
-		self.energies          = np.zeros((energy_saves, n_structures))
-		self.reciprocals       = self.dataset.train_reciprocals
-		self.reciprocals       = self.reciprocals.numpy().transpose()[0]
-		self.iteration         = 0
+		if self.energy_interval != 0:
+			energy_saves  = (self.iterations // self.energy_interval) + 1
+			n_structures  = self.dataset.train_reduction.shape[0]
+			self.energies = np.zeros((energy_saves, n_structures))
+			self.reciprocals = self.dataset.train_reciprocals
+			self.reciprocals = self.reciprocals.numpy().transpose()[0]
 
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
@@ -418,7 +429,7 @@ class Trainer:
 				file.write('training_index %s\n'%vol_str)
 
 				for i in range(self.energies.shape[0]):
-					energy_str  = ' '.join([str(e) for e in self.energies[i]])
+					energy_str  = ' '.join(['%.6E'%e for e in self.energies[i]])
 					line        = '%06i %s\n'
 					line       %= (i * self.energy_interval, energy_str)
 					file.write(line)
