@@ -45,3 +45,4 @@ This will initialize an interactive console at that line of code and allow you t
 16) Handle cpu vs. gpu, as well as thread count and gpu affinity
 17) Add --slurm option, where the system will automatically pick cpu vs. gpu as well as thread count and affinity based on environment variables.
 18) Move the argument and config specification structure to a json file.
+19) Implement the recently decided upon change in the gi format (see flagged email)

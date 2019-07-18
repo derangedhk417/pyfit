@@ -24,7 +24,7 @@ def GenerateNeighborList(structures, potential):
 	# to complete.
 	n_total = sum([struct.n_atoms for struct in structures])
 
-	progress = ProgressBar("Neighbor List ", 30, n_total, update_every = 25)
+	progress = ProgressBar("Neighbor List ", 22, n_total, update_every = 25)
 
 	# In some cases this needs to be multiplied by 1.5.
 	# TODO: Figure out exactly when, I haven't encountered this yet.
@@ -80,7 +80,7 @@ def GenerateNeighborList(structures, potential):
 				for k in range(-z_repeat, z_repeat + 1):
 					# This is the new location to use as the center
 					# of the crystal lattice.
-					center_location = A1*i + A2*j + A3*k
+					center_location = a1*i + a2*j + a3*k
 
 					# Now we add each atom + new center location
 					# into the periodic structure.

@@ -31,7 +31,7 @@ class PoscarLoader:
 		text  = text.rstrip()
 		lines = text.split("\n")
 
-		progress = ProgressBar("Poscar Files ", 30, len(lines), update_every=50)
+		progress = ProgressBar("Poscar Files ", 22, len(lines), update_every=50)
 
 		# This code originally had validation checks for all values.
 		# For now, they have been removed. Experience using the program

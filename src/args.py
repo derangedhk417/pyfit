@@ -763,7 +763,7 @@ argument_specification = {
 		'short_name'       : '-e',
 		'long_name'        : '--network-input-file',
 		'type'             : 'string',
-		'predicate'        : 'run_training',
+		'predicate'        : None,
 		'description'      : 'The neural network file to load for training.',
 		'long_description' : None,
 		'examples'         : []

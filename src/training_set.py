@@ -2,6 +2,8 @@
 # This file contains classes and methods that assist in reading and writing
 # training set files in the custom format used for neural network potentials.
 
+import numpy as np
+
 # this parses and stores the header information
 from config import PotentialConfig
 from util   import ProgressBar
@@ -20,18 +22,18 @@ class TrainingSet:
 	def loadFromText(self, text):
 		lines = text.rstrip().split('\n')
 
-		self.config = PotentialConfig('\n'.join(lines[:8]))
+		self.config = PotentialConfig().loadFromText('\n'.join(lines[:8]))
 
-		self.potential_type = int(self._getCellsFromLine(self.lines[8])[1])
-		self.n_structures   = int(self._getCellsFromLine(self.lines[9])[1])
-		self.n_atoms        = int(self._getCellsFromLine(self.lines[10])[1])
+		self.potential_type = int(self._getCellsFromLine(lines[8])[0])
+		self.n_structures   = int(self._getCellsFromLine(lines[9])[0])
+		self.n_atoms        = int(self._getCellsFromLine(lines[10])[0])
 
 		parameters_per_atom  = self.config.n_legendre_polynomials
 		parameters_per_atom *= self.config.n_r0
 
 		progress = ProgressBar(
 			"Loading Training Set", 
-			30, self.n_structures, update_every = 10
+			22, self.n_structures, update_every = 10
 		)
 
 		# Every set of two lines from 13 onwards should correspond to a single 
@@ -44,11 +46,11 @@ class TrainingSet:
 		idx             = 12
 		current_struct  = []
 		current_id      = 0
-		while idx < len(self.lines):
+		while idx < len(lines):
 			
 			atom = TrainingInput().fromLines(
-				self.lines[idx], 
-				self.lines[idx + 1], 
+				lines[idx], 
+				lines[idx + 1], 
 				parameters_per_atom
 			)
 
@@ -82,25 +84,26 @@ class TrainingSet:
 		# The PoscarLoader class itself is iterable. It will return a single
 		# structure per iteration, each structure being an instance of
 		# poscar.py -> PoscarStructure
-		current_group_id = 0
-		current_group    = poscar.structures[0][0].comment
+		current_group_id = 1
+		current_group    = poscar.structures[0].comment
 		for struct_idx, struct in enumerate(poscar):
 			group_name = struct.comment
 			if group_name != current_group:
 				current_group_id += 1
 				current_group     = group_name
 
+			# This is divided by two to match previous code.
 			struct_volume = np.linalg.norm(
 				np.dot(
 					np.cross(struct.a1, struct.a2),
 					struct.a3
 				)
-			)
+			) / 2
 
 			training_input = TrainingInput()
 			training_input.group_name        = group_name
 			training_input.group_id          = current_group_id
-			training_input.structure_id      = struct_idx
+			training_input.structure_id      = struct_idx 
 			training_input.structure_n_atoms = struct.n_atoms
 			training_input.structure_energy  = struct.energy
 			training_input.structure_volume  = struct_volume
@@ -113,13 +116,15 @@ class TrainingSet:
 
 			self.structures.append(current_struct)
 
+		return self
+
 	# Writes the current instance to the specified file. Will overwrite any 
 	# file that is already at that path.
 	def writeToFile(self, file_path):
 		# 50 Kb buffer because these files are always large. This should
 		# make the write a little faster.
 		with open(file_path, 'w', 1024*50) as file:
-			file.write(config.toFileString(prepend_comment=True))
+			file.write(self.config.toFileString(prepend_comment=True))
 			file.write(' # %i - Potential Type\n'%(1))
 			file.write(' # %i - Number of Structures\n'%(self.n_structures))
 			file.write(' # %i - Number of Atoms\n'%(self.n_atoms))
@@ -128,7 +133,7 @@ class TrainingSet:
 
 			progress = ProgressBar(
 				"Writing LSParams ", 
-				30, self.n_atoms, update_every = 50
+				22, self.n_atoms, update_every = 50
 			)
 
 			atom_idx = 0
@@ -210,6 +215,7 @@ class TrainingInput:
 			self.structure_params[idx] = float(val)
 
 		return self
+
 
 	# Extracts all of the relevent cells of information from a line, split
 	# on ' ' characters. Also removes '#' characters.

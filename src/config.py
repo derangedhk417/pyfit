@@ -92,13 +92,13 @@ class PotentialConfig:
 	def toFileString(self, prepend_comment = False):
 		string  = ""
 
-		string += ' %i %.7f %i '%(
+		string += ' %i %.7f %i \n'%(
 			self.gi_mode, 
 			self.gi_shift, 
 			self.activation_function
 		)
 
-		string += ' %i '%self.n_species
+		string += ' %i \n'%self.n_species
 
 		string += ' %s %.7f\n'%(self.element, self.mass)
 
