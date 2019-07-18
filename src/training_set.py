@@ -150,7 +150,7 @@ class TrainingSet:
 					))
 
 					current_params = training_input.structure_params
-					params_strs    = ['%.10E'%g for g in current_params]
+					params_strs    = ['%.6E'%g for g in current_params]
 					params_strs    = ' '.join(params_strs)
 					file.write('Gi  %s\n'%(params_strs))
 

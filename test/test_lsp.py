@@ -16,9 +16,9 @@ path.append("../src")
 from training_set import TrainingSet
 
 # These are all maximum tolerable error statistics in percent.
-max_err_threshold  = 0.01
-mean_err_threshold = 0.00001
-std_err_threshold  = 0.00001
+max_err_threshold  = 0.00001
+mean_err_threshold = 0.0000001
+std_err_threshold  = 0.0000001
 
 def compareInputs(new, old, i, j):
 	def location():
@@ -50,9 +50,13 @@ def compareInputs(new, old, i, j):
 		err(new.structure_energy, old.structure_energy)
 		return False
 
-	if new.structure_volume != old.structure_volume:
-		err(new.structure_volume, old.structure_volume)
-		return False
+	# Decided not to compare volume. The old code appears
+	# to use a amore comlicted method to determine this.
+	# if new.structure_volume != old.structure_volume:
+	# 	err(new.structure_volume, old.structure_volume)
+	# 	return False
+
+	return True
 
 def compareTrainingSets(new, old):
 	new_set = TrainingSet().loadFromFile(new)
@@ -80,7 +84,7 @@ def compareTrainingSets(new, old):
 				return False
 
 			# Now we get the error in the structure parameters.
-			percent_errors  = new_in.structure_params
+			percent_errors  = np.copy(new_in.structure_params)
 			percent_errors -= old_in.structure_params
 			percent_errors /= old_in.structure_params
 			percent_errors  = np.abs(percent_errors) * 100
@@ -104,6 +108,8 @@ def compareTrainingSets(new, old):
 				
 
 			if err:
+				print(location())
+
 				new_str = ' '.join([str(i) for i in new_in.structure_params])
 				print('\tnew: %s'%(new_str))
 
@@ -111,6 +117,7 @@ def compareTrainingSets(new, old):
 				print('\told: %s'%(old_str))
 
 				return False
+	return True
 
 
 if __name__ == '__main__':
