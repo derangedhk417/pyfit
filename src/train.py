@@ -73,14 +73,14 @@ class TorchTrainingData:
 
 				sorted_group = sorted_group[1:-1]
 				proper_ratio = validation_ratio - (2 / len(group))
-
-				indices       = np.arange(0, len(sorted_group))
+				indices      = np.arange(0, len(sorted_group))
 
 				# Select this many structures from what remains.
 				training_to_select = min([
 					int(round(proper_ratio * len(group))),
 					len(sorted_group)
 				])
+
 				train_indices = np.random.choice(
 					indices, 
 					training_to_select, 
@@ -88,14 +88,6 @@ class TorchTrainingData:
 				)
 
 			val_indices = [i for i in indices if i not in train_indices]
-
-			if len(val_indices) == 0 and validation_ratio != 1.0:
-				msg  = "The validation quantity was so small that none of "
-				msg += "the structure \'%s\' was included in the validation "
-				msg += "data set.\nExiting . . . "
-				msg %= group_names[idx]
-				print(msg)
-				exit(1)
 
 			# We now have a list of structure indices within this group
 			# that need to be used to generate training data and a list that
