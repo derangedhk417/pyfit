@@ -56,3 +56,39 @@ In order to train a neural network, pyfit needs to know what network potential f
 - `"training_set_in"    : "some_file"`
 - `"neural_network_in"  : "some_file"`
 -	`"neural_network_out" : "some_file"`
+
+This is the bare minimum to get things started. The following configuration variables are also useful.
+
+`training_iterations`  
+How many training iterations to run. If you specify zero, the system will determine the training loss and validation loss of the network and export them to the relevant files.
+
+`validation_ratio`  
+What portion of the training set should be used as training data. For example, a value of 0.9 would result in 90% of the data being used for training and 10% being used for validation.
+
+`learning_rate`  
+Standard neural network learning rate value.
+
+`max_lbfgs_iterations`  
+pyfit uses the LBFGS optimizer for training. This is substantially more effective than SGD and is the best optimizer that has been used so far. This parameter controls the internal functionality of the optimizer. See [this](https://pytorch.org/docs/stable/optim.html?highlight=lbfgs#torch.optim.LBFGS)
+
+`network_backup_interval`  
+How often to backup the neural network.
+
+`network_backup_dir`  
+Where to store backups of the neural network at different stages of the training. This is useful if you are having stabilty issue and want to be able to backtrack to a good network configuration.
+
+`loss_log_path`  
+Where to log the training loss of the neural network. This file will have two columns, the first is the training iteration, the second is the loss at that iteration.
+
+`validation_interval`
+How often to calculate the validation loss. This process has a significant cost, so doing it too often will slow down training.
+
+`validation_log_path`
+Where to log the validation loss of the neural network. This is in the same format as the training loss log.
+
+`energy_volume_interval`  
+How often to store energy volume data. This information is meant to be graphed as a sanity check of the neural network. It allows you to see the correlation between the per-atom volume of a structure and the per-atom energy of a structure, as determined by the neural network.
+
+`energy_volume_file`  
+Where to store the energy vs. volume information. The first line will be the per-atom volume of each structure. All subsequent lines will be the iteration, followed by the per-atom energy of each structure at that training iteration. This file is large, and this process is expensive. Exporting too frequently will slow things down.
+
