@@ -318,12 +318,23 @@ class Trainer:
 	# The last argument is the config structure generated when the program
 	# parses its command line arguments. You can also just as easily make
 	# your own if you want to call this code from another program.
-	def __init__(self, network_potential, training_set, config):
+	def __init__(self, network_potential, training_set, config, log=None):
+		self.log = log
+
+		if self.log is not None:
+			self.log.log("Initializing Trainer")
+			self.log.indent()
+
 		# Handle enforcement of threading restrictions.
 		if config.thread_count != 0:
 			os.environ["OMP_NUM_THREADS"] = str(config.thread_count)
 			os.environ["MKL_NUM_THREADS"] = str(config.thread_count)
 			torch.set_num_threads(config.thread_count)
+
+			if self.log is not None:
+				self.log.log("Enforcing --n-threads=%i"%config.thread_count)
+				self.log.log("Setting OMP_NUM_THREADS and MKL_NUM_THREADS")
+				self.log.log("Calling torch.set_num_threads")
 
 		# In order to actually train a network, we need an optimizer,
 		# a loss calculating function, some tensors for that function,
@@ -362,6 +373,10 @@ class Trainer:
 		else:
 			self.device = torch.device('cpu')
 
+		if self.log is not None:
+			self.log.log("Sending Tensors to Device")
+			self.log.log("Device = %s"%str(self.device))
+
 		self.nn      = self.nn.to(self.device)
 		self.dataset = self.dataset.to(self.device)
 
@@ -370,6 +385,9 @@ class Trainer:
 			lr=self.learning_rate, 
 			max_iter=self.max_lbfgs
 		)
+
+		if self.log is not None:
+			self.log.unindent()
 
 	def loss(self):
 		output = self.nn(self.dataset.train_lsp)
@@ -416,6 +434,10 @@ class Trainer:
 	# structure. This includes writing output files, training the network,
 	# etc.
 	def train(self):
+		if self.log is not None:
+			self.log.log("Beginning Training")
+			self.log.indent()
+
 		self.training_losses = np.zeros(self.iterations + 1)
 		self.iteration       = 0
 
@@ -433,6 +455,13 @@ class Trainer:
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
 
+		if self.log is not None:
+			self.log.log("Iterations             = %i"%(self.iterations))
+			self.log.log("Validation Interval    = %i"%(self.val_interval))
+			self.log.log("Energy Export Interval = %i"%(self.energy_interval))
+			self.log.log("Backup Interval        = %i"%(self.backup_interval))
+			self.log.log("Backup Location        = %s"%(self.backup_dir))
+
 		# Here we begin the actual training loop.
 		try:
 			self._train_loop()
@@ -440,6 +469,9 @@ class Trainer:
 			# This most likely means the user wants early termination
 			# to occur. 
 			print("Detected keyboard interrupt, cleaning up . . .")
+			if self.log is not None:
+				self.log.log("SIGINT detected. Cleaning up . . . ")
+				self.log.log("Iteration Reached = %i"%self.iteration)
 
 
 		# The training is over. Now we write all of the appropriate output 
@@ -450,6 +482,9 @@ class Trainer:
 			for i in range(self.training_losses.shape[0]):
 				file.write('%06i %.10E\n'%(i, self.training_losses[i]))
 
+			if self.log is not None:
+				self.log.log("wrote loss log \'%s\'"%(self.loss_log))
+
 		# Write the validation file.
 		if self.val_interval != 0:
 			with open(self.val_log, 'w', 1024*10) as file:
@@ -457,6 +492,9 @@ class Trainer:
 					line  = '%06i %.10E\n'
 					line %= (i * self.val_interval, self.validation_losses[i])
 					file.write(line)
+
+			if self.log is not None:
+				self.log.log("wrote validation log \'%s\'"%(self.val_log))
 
 		# Write the energy vs. volume file.
 		if self.energy_interval != 0:
@@ -474,11 +512,18 @@ class Trainer:
 					line       %= (i * self.energy_interval, energy_str)
 					file.write(line)
 
+			if self.log is not None:
+				self.log.log("wrote energy log \'%s\'"%(self.energy_file))
+
 		# Write the final neural network file.
 		layers = self.nn.cpu().getNetworkValues()
-		tmp    = deepcopy(self.potential)
-		tmp.layers = layers
-		tmp.writeNetwork(self.network_out)
+		self.potential.layers = layers
+		self.potential.writeNetwork(self.network_out)
+
+		if self.log is not None:
+			n_out = self.network_out
+			self.log.log("wrote final network potential \'%s\'"%(n_out))
+			self.log.unindent()
 
 
 	# This is the loop that handles the actual training.
@@ -509,12 +554,11 @@ class Trainer:
 
 			if self.backup_interval != 0:
 				if self.iteration % self.backup_interval == 0:
-					idx    = (self.iteration // self.backup_interval)
+					idx    = self.iteration
 					path   = self.backup_dir + 'nn_bk_%05i.nn.dat'%idx
 					layers = self.nn.getNetworkValues()
-					tmp    = deepcopy(self.potential)
-					tmp.layers = layers
-					tmp.writeNetwork(path)
+					self.potential.layers = layers
+					self.potential.writeNetwork(path)
 			
 			# Perform an evaluate and correct step, while storing
 			# the resulting loss in self.training_losses.

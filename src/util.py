@@ -72,7 +72,7 @@ class ProgressBar:
 		self.current       = 0.0
 		self.last          = 0.0
 		self.remaining     = 0
-		self.width         = int(terminal_dims()[1] / 2.5)
+		self.width         = terminal_dims()[1] - 55
 		self.estimate      = True
 		self.start_time    = datetime.now()
 		self.update_count  = 0
@@ -80,7 +80,7 @@ class ProgressBar:
 		self.sizes         = [] # Amount of work in each chunk.
 		self.display()
 
-		self.last_time = time.time_ns()
+		self.last_time = time.time()
 
 
 	def update(self, value):
@@ -92,7 +92,7 @@ class ProgressBar:
 			should_estimate = (datetime.now() - self.start_time).seconds > 15
 			if work != 0:
 				self.last      = self.current
-				timenow        = time.time_ns()
+				timenow        = time.time()
 				timing         = timenow - self.last_time
 				self.last_time = timenow
 
@@ -121,6 +121,7 @@ class ProgressBar:
 		self.display(_end='')
 		print(time, end='')
 		print('\n', end='')
+		self.ttc = total_time
 
 	# This function returns a tuple with the first member being the
 	# percentage to display and the second number being the number
@@ -136,7 +137,7 @@ class ProgressBar:
 		space  = ' ' * (self.width - ticks)
 		disp   = '%' + '%05.2f'%(percentage)
 
-		rem_seconds = int(self.remaining // int(1e9))
+		rem_seconds = int(self.remaining)
 		rem_minutes = rem_seconds // 60
 		rem_seconds = rem_seconds % 60
 		rem_hours   = rem_minutes // 60

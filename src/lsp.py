@@ -8,7 +8,12 @@ from util import ProgressBar
 # neighbor.py -> GenerateNeighborList, will generate local structure parameters
 # in the conventional order, based on the hyperparameters defined in the 
 # neural network potential configuration supplied (NetworkPotential.config)
-def GenerateLocalStructureParams(neighbor_list, potential_config, sys_config):
+def GenerateLocalStructureParams(neighbor_list, potential_config, log=None):
+
+	if log is not None:
+		log.log("Generating Local Structure Parameters")
+		log.indent()
+
 	# Here we compute the number of operations that will need
 	# to take place in order to calculate the structural 
 	# parameters. This is somewhat of an estimate, but the
@@ -42,8 +47,7 @@ def GenerateLocalStructureParams(neighbor_list, potential_config, sys_config):
 			# parameters for it.
 			parameters_for_structure[idx, :] = computeParameters(
 				atom_neighbors, 
-				potential_config,
-				sys_config
+				potential_config
 			)
 
 		n_processed += processed
@@ -53,12 +57,16 @@ def GenerateLocalStructureParams(neighbor_list, potential_config, sys_config):
 
 	progress.finish()
 
+	if log is not None:
+		log.log("Time Elapsed = %ss"%progress.ttc)
+		log.unindent()
+
 	return structural_parameters
 
 # Given the neighbor list for a specific atom, as well as the network potential
 # that defines the hyperparameters, computes the structural parameters for the
 # atom.
-def computeParameters(neighbors, potential_config, sys_config):
+def computeParameters(neighbors, potential_config):
 	# First we need a list of every unique combination of
 	# two neighbors, not considering [0, 1] to be unique 
 	# compared to [1, 0]. More specifically, a different

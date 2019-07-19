@@ -14,10 +14,11 @@ from util import ProgressBar
 # Once data is loaded, this class can be used as an iterable, returning
 # an instance of PoscarStructure for each structure loaded.
 class PoscarLoader:
-	def __init__(self, e_shift):
+	def __init__(self, e_shift, log=None):
 		self.e_shift   = e_shift
 		self.loaded    = False
 		self.iter      = None
+		self.log       = log
 
 		self.n_atoms      = 0
 		self.n_structures = 0
@@ -25,6 +26,12 @@ class PoscarLoader:
 		self.all_comments = []
 
 	def loadFromFile(self, file_path):
+		if self.log is not None:
+			self.log.log("Loading DFT data")
+			self.log.indent()
+
+			self.log.log("File = %s"%(file_path))
+
 		with open(file_path, 'r') as file:
 			text = file.read()
 
@@ -63,6 +70,11 @@ class PoscarLoader:
 
 		progress.finish()
 		self.loaded = True
+
+		if self.log is not None:
+			self.log.log("Atoms      Loaded = %i"%self.n_atoms)
+			self.log.log("Structures Loaded = %i"%self.n_structures)
+			self.log.unindent()
 
 		return self
 

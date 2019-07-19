@@ -11,10 +11,16 @@ from util   import ProgressBar
 from copy   import deepcopy
 
 class TrainingSet:
-	def __init__(self):
-		pass	
+	def __init__(self, log=None):
+		self.log = log
 
 	def loadFromFile(self, file_path):
+		if self.log is not None:
+			self.log.log("Loading Training Set")
+			self.log.indent()
+			self.log.log("Source = disk")
+			self.log.log("File   = %s"%(file_path))
+
 		with open(file_path, 'r') as file:
 			text = file.read()
 
@@ -67,6 +73,12 @@ class TrainingSet:
 		progress.finish()
 		self.structures.append(current_struct)
 
+		if self.log is not None:
+			self.log.log("Atoms      Loaded = %i"%self.n_atoms)
+			self.log.log("Structures Loaded = %i"%self.n_structures)
+			self.log.log("Time Elapsed = %ss"%progress.ttc)
+			self.log.unindent()
+
 		return self
 
 	# Given a PoscarLoader instance, a list of local structure parameters
@@ -74,6 +86,11 @@ class TrainingSet:
 	# potential instance, will generate a training set instance. This can
 	# then be immediately used, or written to a file.
 	def loadFromMemory(self, poscar, lsp, potential):
+		if self.log is not None:
+			self.log.log("Loading Training Set")
+			self.log.indent()
+			self.log.log("Source = memory")
+
 		self.config     = potential.config
 
 		self.potential_type = 1
@@ -126,11 +143,21 @@ class TrainingSet:
 
 			self.structures.append(current_struct)
 
+		if self.log is not None:
+			self.log.log("Atoms      Loaded = %i"%self.n_atoms)
+			self.log.log("Structures Loaded = %i"%self.n_structures)
+			self.log.unindent()
+
 		return self
 
 	# Writes the current instance to the specified file. Will overwrite any 
 	# file that is already at that path.
 	def writeToFile(self, file_path):
+		if self.log is not None:
+			self.log.log("Writing Training Set to File")
+			self.log.indent()
+			self.log.log("File = %s"%(file_path))
+
 		# 50 Kb buffer because these files are always large. This should
 		# make the write a little faster.
 		with open(file_path, 'w', 1024*50) as file:
@@ -171,6 +198,10 @@ class TrainingSet:
 
 			progress.finish()
 			file.write('\n')
+
+		if self.log is not None:
+			self.log.log("Time Elapsed = %ss"%progress.ttc)
+			self.log.unindent()
 
 
 	# Returns all structures in the training set, divided by which group they

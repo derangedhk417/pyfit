@@ -42,26 +42,27 @@ def RunPyfit(config):
 	training_set = None
 
 	if config.generate_training_set:
-		poscar_data = PoscarLoader(config.e_shift)
+		poscar_data = PoscarLoader(config.e_shift, log=log)
 		poscar_data = poscar_data.loadFromFile(config.dft_input_file)
-		potential   = NetworkPotential()
+		potential   = NetworkPotential(log=log)
 		potential   = potential.loadFromFile(config.neural_network_in)
 
 		neighborLists = GenerateNeighborList(
 			poscar_data.structures,
-			potential
+			potential,
+			log=log
 		)
 
 		lsps = GenerateLocalStructureParams(
 			neighborLists,
 			potential.config,
-			config
+			log=log
 		)
 
-		training_set = TrainingSet().loadFromMemory(
+		training_set = TrainingSet(log=log).loadFromMemory(
 			poscar_data,
 			lsps,
-			potential
+			potential,
 		)
 
 		training_set.writeToFile(config.training_set_output_file)
@@ -72,8 +73,9 @@ def RunPyfit(config):
 		# training output file matches the training input file being used.
 		# Instead of loading from disk, just use the existing instance.
 		if not config.generate_training_set:
-			training_set = TrainingSet().loadFromFile(config.training_set_in)
-			potential    = NetworkPotential()
+			training_set = TrainingSet(log=log)
+			training_set = training_set.loadFromFile(config.training_set_in)
+			potential    = NetworkPotential(log=log)
 			potential    = potential.loadFromFile(config.neural_network_in)
 
 			if not config.no_warn:
@@ -81,11 +83,12 @@ def RunPyfit(config):
 					return 1
 
 		if config.randomize:
+			log.log("Randomizing network potential parameters.")
 			potential.randomizeNetwork()
 
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.
-		trainer = Trainer(potential, training_set, config)
+		trainer = Trainer(potential, training_set, config, log=log)
 
 		trainer.train()
 

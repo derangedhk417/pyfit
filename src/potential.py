@@ -10,9 +10,10 @@ import numpy as np
 from config import PotentialConfig
 
 class NetworkPotential:
-	def __init__(self):
+	def __init__(self, log=None):
 		self.layers         = None
 		self.network_values = None
+		self.log            = log
 
 	# Randomizes the network based upon its configuration header value for
 	# the maximum random value.
@@ -31,6 +32,12 @@ class NetworkPotential:
 		).tolist()
 
 	def loadFromFile(self, file_path):
+		if self.log is not None:
+			self.log.log("Loading Network Potential")
+			self.log.indent()
+
+			self.log.log("File = %s"%(file_path))
+
 		with open(file_path, 'r') as file:
 			text = file.read()
 
@@ -54,8 +61,14 @@ class NetworkPotential:
 		)
 
 		if self.config.randomize:
+			if self.log is not None:
+				self.log.log("network was randomized and written to file")
+
 			self.config.randomize = False
 			self.writeNetwork(file_path)
+
+		if self.log is not None:
+			self.log.unindent()
 
 		return self
 
@@ -63,6 +76,11 @@ class NetworkPotential:
 	def writeNetwork(self, path):
 		if self.layers is None:
 			raise Exception("This network has not been loaded.")
+
+		if self.log is not None:
+			self.log.log("Writing Network Potential To File")
+			self.log.indent()
+			self.log.log("File = %s"%(path))
 
 		with open(path, 'w') as file:
 			file.write(self.config.toFileString())
@@ -72,16 +90,23 @@ class NetworkPotential:
 			# for each layer.
 			# len(layer[0][0]) is the width of the weight matrix  (N)
 			# len(layer)       is the height of the weight matrix (M)
+			n_written = 0
 			for layer in self.layers:
 				# Write the weights.
 				for weight in range(len(layer[0][0])):
 					for node in range(len(layer)):
 						weight_value = layer[node][0][weight]
 						file.write(' %-+17.8E 0.0000\n'%(weight_value))
+						n_written += 1
 
 				# Write the biases.
 				for node in range(len(layer)):
 					file.write(' %-+17.8E 0.0000\n'%(layer[node][1]))
+					n_written += 1
+
+		if self.log is not None:
+			self.log.log("Parameters Written = %i"%(n_written))
+			self.log.unindent()
 
 	# Using the flat array of values in the network file, constructs an
 	# array where each element is a layer. Each element of every layer is

@@ -8,8 +8,12 @@ from util import ProgressBar
 # This first argument to this function should pretty much always be the 
 # structures member of a PoscarLoader instance. The second should be neural
 # network potential that this is being generated for.
-def GenerateNeighborList(structures, potential):
+def GenerateNeighborList(structures, potential, log=None):
 	
+	if log is not None:
+		log.log("Generating Neighbor List")
+		log.indent()
+
 	# For each atom within each structure, we need to generate a list
 	# of atoms within the cutoff distance. Periodic images need to be
 	# accounted for during this process. Neighbors in this list are
@@ -34,11 +38,6 @@ def GenerateNeighborList(structures, potential):
 
 	neigborLists = []
 	for structure in structures:
-		# TODO: Determine the actual bounds of the structure
-		#       in order to produce the minimum periodic structure.
-		#       Right now this code makes what is probably way too
-		#       large of a structure, just to be safe.
-		#
 		# TODO: Implement the optimized neighbor list algorithm I came up with.
 		#       It isn't really necessary, but it would be a good test of the
 		#       algorithm and could speed the process up by as much as a factor
@@ -134,5 +133,9 @@ def GenerateNeighborList(structures, potential):
 	
 	progress.update(n_total)
 	progress.finish()
+
+	if log is not None:
+		log.log("Time Elapsed = %ss"%progress.ttc)
+		log.unindent()
 
 	return neigborLists
