@@ -7,21 +7,52 @@ from datetime import datetime
 
 import atexit
 
+log_instances = []
+
 class Log:
-	def __init__(self, file_name, max_col=80):
-		self.file    = open(file_name, 'w')
-		self.max_col = max_col
-		self.indent  = 0
+	def __init__(self, file_name, max_col=80, tab_size=4):
+		self.file     = open(file_name, 'w', 1024*10)
+		self.max_col  = max_col
+		self._indent   = 0
+		self.tab_size = 4
+
+		log_instances.append(self)
 
 	def log(self, text):
-		pass
+		# Split the logged information on spaces and add appropriate newline
+		# characters and spaces to emulate tabs.
+		words = text.split(' ')
 
-	@atexit.register
-	def __del__(self):
+		lines = []
+		idx   = 0
+		while idx < len(words):
+			current_line = ' '*(self._indent * self.tab_size)
+
+			while len(current_line) < self.max_col and idx < len(words):
+				if len(current_line) + len(words[idx]) + 1 < self.max_col:
+					current_line += words[idx] + ' '
+					idx          += 1
+
+			lines.append(current_line)
+
+		self.file.write('\n'.join(lines) + '\n')
+
+	def indent(self):
+		self._indent += 1
+
+	def unindent(self):
+		self._indent -= 1
+
+	def __del__(self=None):
 		try:
 			self.file.close()
 		except:
 			print("Failed to close log file. It may be incomplete.")
+
+@atexit.register
+def cleanup():
+	for log in log_instances:
+		del log
 
 # Returns the dimensions of the current terminal window or a good guess if 
 # something goes wrong.

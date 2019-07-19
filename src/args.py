@@ -8,6 +8,10 @@ import json
 import util
 import os
 import sys
+import code
+
+from datetime import datetime
+from util     import Log
 
 # Returns an object that contains the arguments to the program. Also 
 # ensures that all arguments are recognized and that arguments are not
@@ -285,6 +289,8 @@ def combineArgsWithConfig(arg_dict):
 	# By this point we are certain that every configuration variable is present,
 	# of the correct type and actually recognized.
 
+	config['as_dictionary'] = config
+
 	# This will construct a runtime type, which makes all of the configuration
 	# variables accessible as members. This is more convenient than typing
 	# config['var_name'] each time you need to access it.
@@ -422,6 +428,33 @@ def ValidateArgs(args):
 			print("The log file does not appear to be writable.")
 			return 1
 
+	log = Log(args.log_path)
+
+	# ==============================
+	# Logging
+	# ==============================
+
+	time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+	log.log("run starting %s"%(time_str))
+
+	# Log the configuration file for this run.
+	del args.as_dictionary['as_dictionary']
+	arg_dict = args.as_dictionary
+
+	max_len = max([len(k) for k in arg_dict])
+	log.log('='*10 + ' Run Configuration ' + 10*'=')
+	log.indent()
+	for k in arg_dict:
+		k_str = k + (max_len - len(k))*' '
+		log.log('%s = %s'%(k_str, arg_dict[k]))
+
+	log.unindent()
+	log.log('='*39)
+
+	# ==============================
+	# End Logging
+	# ==============================
+
 	if not args.run_training and not args.generate_training_set:
 		print("No task was specified. Use -g and/or -t.\n")
 		PrintHelp(None)
@@ -544,8 +577,6 @@ def ValidateArgs(args):
 			if not ok:
 				print("The specified training set file does not exist.")
 				return 1
-
-		
 
 		try:
 			if os.path.isfile(args.training_set_in):
@@ -704,7 +735,7 @@ def ValidateArgs(args):
 			print(msg)
 			return 1
 
-	return 0
+	return 0, log
 
 
 # This structure specifies the type, name, argument name and description of all

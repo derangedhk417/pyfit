@@ -30,8 +30,10 @@ def RunPyfit(config):
 	# still possible that a file has invalid contents though.
 	status = ValidateArgs(config)
 
-	if status != 0:
+	if not isinstance(status, tuple):
 		return status
+
+	log = status[1]
 
 	# Now that basic configuration stuff is out of the way, we need to 
 	# generate a training set, train a neural network or both. 
