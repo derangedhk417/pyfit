@@ -2,10 +2,10 @@
 // variables that need to be specified. Despite the fact that c-style comments
 // are not part of the json spec, you can add them here (not multiline ones).
 {
-	"generate_training_set"       : true,
+	"generate_training_set"       : false,
 	"training_set_output_file"    : "test.nogit.lsparam.dat",
 	"dft_input_file"              : "test/input/ab.poscar.dat",
-	"run_training"                : true,
+	"run_training"                : false,
 	"training_set_in"             : "test.nogit.lsparam.dat",
 	"neural_network_in"           : "test/nn/small.nn.dat",
 	"neural_network_out"          : "test.nogit.nn.dat",

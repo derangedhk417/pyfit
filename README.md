@@ -25,23 +25,12 @@ This will initialize an interactive console at that line of code and allow you t
 
 # TODO
 
-1) Improve help output with examples and drill down into parameters.
-3) Should probably add an option that lets the system overwrite existing files.
-5) Make sure that the system properly responds to SIGSTOP and SIGCONT when they
-   are received during the training process.
-6) Add various checks during the training process for things that could go wrong.
+1) Add various checks during the training process for things that could go wrong.
    This should include things like running out of memory, among others.
-7) Try to implement a decent means of predicting the time that long running tasks will take.
-8) Implement non-cartesian poscar coordinates.
-9) Figure out 1.5 coefficient thing in neighbor.py
-10) Make periodic structure generation in neighbor.py more efficient.
-11) Add isinstance checks on certain functions to ensure that arguments are of the correct type.
-12) Implement a .to method in all classes that store tensors.
-13) Decide how to approach logging, without cluttering the code too much.
-14) Implement randomize option.
-15) Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().
-16) Handle cpu vs. gpu, as well as thread count and gpu affinity
-17) Add --slurm option, where the system will automatically pick cpu vs. gpu as well as thread count and affinity based on environment variables.
-18) Move the argument and config specification structure to a json file.
-19) Implement the recently decided upon change in the gi format (see flagged email)
-20) Add argument for ignoring when a group has no members in the validation set.
+2) Try to implement a decent means of predicting the time that long running tasks will take.
+3) Implement non-cartesian poscar coordinates.
+4) Implement a .to method in all classes that store tensors.
+5) Decide how to approach logging, without cluttering the code too much.
+6) Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().
+7) Handle cpu vs. gpu, as well as thread count and gpu affinity
+8) Add --slurm option, where the system will automatically pick cpu vs. gpu as well as thread count and affinity based on environment variables.

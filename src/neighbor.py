@@ -56,6 +56,7 @@ def GenerateNeighborList(structures, potential):
 		a2 = structure.a2
 		a3 = structure.a3
 
+
 		# Determine the number of times to repeat the
 		# crystal structure in each direction.
 
