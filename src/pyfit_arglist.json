@@ -1,0 +1,185 @@
+{
+	"config_file" : {
+		"short_name"       : "-j",
+		"long_name"        : "--config-file",
+		"type"             : "string",
+		"predicate"        : null,
+		"description"      : "The configuration file to use. Default is _pyfit_config.json.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"generate_training_set" : {
+		"short_name"       : "-g",
+		"long_name"        : "--generate-training-set",
+		"type"             : "flag",
+		"predicate"        : null,
+		"description"      : "When specified, the program will generate a training set file.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"training_set_output_file" : {
+		"short_name"       : "-a",
+		"long_name"        : "--training-set-out",
+		"type"             : "string",
+		"predicate"        : "generate_training_set",
+		"description"      : "The file to write the training set to.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"dft_input_file" : {
+		"short_name"       : "-f",
+		"long_name"        : "--dft-file",
+		"type"             : "string",
+		"predicate"        : "generate_training_set",
+		"description"      : "The file that contains the dft data.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"training_set_in" : {
+		"short_name"       : "-s",
+		"long_name"        : "--training-set-in",
+		"type"             : "string",
+		"predicate"        : "run_training",
+		"description"      : "The training file to use.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"run_training" : {
+		"short_name"       : "-t",
+		"long_name"        : "--run-training",
+		"type"             : "flag",
+		"predicate"        : null,
+		"description"      : "Train the neural network.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"neural_network_in" : {
+		"short_name"       : "-e",
+		"long_name"        : "--network-input-file",
+		"type"             : "string",
+		"predicate"        : null,
+		"description"      : "The neural network file to load for training.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"neural_network_out" : {
+		"short_name"       : "-y",
+		"long_name"        : "--network-output-file",
+		"type"             : "string",
+		"predicate"        : "run_training",
+		"description"      : "The neural network file to write when done training.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"training_iterations" : {
+		"short_name"       : "-i",
+		"long_name"        : "--training-iterations",
+		"type"             : "int",
+		"predicate"        : "run_training",
+		"description"      : "How many training iterations to run.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"randomize" : {
+		"short_name"       : "-r",
+		"long_name"        : "--randomize-nn",
+		"type"             : "flag",
+		"predicate"        : "run_training",
+		"description"      : "Randomize the neural network before training. Will not modify file.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"force_cpu" : {
+		"short_name"       : "-c",
+		"long_name"        : "--force-cpu",
+		"type"             : "flag",
+		"predicate"        : "run_training",
+		"description"      : "Force training to take place on the cpu.",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"gpu_affinity" : {
+		"short_name"       : "-u",
+		"long_name"        : "--gpu-affinity",
+		"type"             : "int",
+		"predicate"        : "run_training",
+		"description"      : "Train the network on the specified gpu (index).",
+		"long_description" : null,
+		"examples"         : []
+	},
+	"thread_count" : {
+		"short_name"       : "-n",
+		"long_name"        : "--n-threads",
+		"type"             : "int",
+		"predicate"        : null,
+		"description"      : "Force operations to use only this many threads.",
+		"long_description" : "Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.",
+		"examples"         : []
+	},
+	"no_warn" : {
+		"short_name"       : "-w",
+		"long_name"        : "--no-warn",
+		"type"             : "flag",
+		"predicate"        : "run_training",
+		"description"      : "Don\"t issue a warning and continue training if the a structural group will not be represented in the validation data set.",
+		"long_description" : "",
+		"examples"         : []
+	},
+	"overwrite" : {
+		"short_name"       : "-o",
+		"long_name"        : "--overwrite",
+		"type"             : "flag",
+		"predicate"        : null,
+		"description"      : "Overwrite output files if they already exist. Use at your own risk.",
+		"long_description" : "",
+		"examples"         : []
+	},
+	"log_path" : {
+		"type"        : "string",
+		"description" : "The path to the file to put logs into."
+	},
+	"e_shift" : {
+		"type"        : "float",
+		"description" : "Used to modify energy values placed in the training file while it is being generated. file value = e_DFT + n_atoms*e_shift"
+	},
+	"network_backup_dir" : {
+		"type"        : "string",
+		"description" : "The directory to place backups of the neural network in during training."
+	},
+	"network_backup_interval" : {
+		"type"        : "int",
+		"description" : "The interval to backup the neural network on. 0 = don\"t store backups."
+	},
+	"loss_log_path" : {
+		"type"        : "string",
+		"description" : "The file to store the training error of the neural network in. If left blank, error will not be stored."
+	},
+	"validation_log_path" : {
+		"type"        : "string",
+		"description" : "The file to store the validation error of the neural network in. If left blank, error will not be stored."
+	},
+	"validation_interval" : {
+		"type"        : "int",
+		"description" : "The interval to calculate the validation error on. 0 = don\"t calculate validation."
+	},
+	"energy_volume_file" : {
+		"type"        : "string",
+		"description" : "The file to store the energy vs. volume data for the network in."
+	},
+	"energy_volume_interval" : {
+		"type"        : "int",
+		"description" : "The interval to dump energy vs. volume into the file on."
+	},
+	"validation_ratio" : {
+		"type"        : "float",
+		"description" : "The ratio of validation inputs to total inputs."
+	},
+	"learning_rate" : {
+		"type"        : "float",
+		"description" : "The learning rate to use when training the neural network."
+	},
+	"max_lbfgs_iterations" : {
+		"type"        : "int",
+		"description" : "The maximum number of LBFGS optimization iterations per training iteration. A value of 10 is usually sufficient."
+	}
+}

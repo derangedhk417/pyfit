@@ -41,9 +41,9 @@ def ParseArgs(arglist):
 			try:
 				argname, argval = arg.split('=')
 			except:
-				msg  = "All parameters that are not flags should be in the form"
-				msg += " --arg-name=arg-value. One of the specified parameters"
-				msg += " was in an invalid format." 
+				msg  = "All parameters that are not flags should be in the "
+				msg += "form --arg-name=arg-value. One of the specified "
+				msg += "parameters was in an invalid format." 
 				print(msg)
 				PrintHelp(arglist)
 				exit(1)
@@ -82,14 +82,19 @@ def ParseArgs(arglist):
 			if typestring == 'flag':
 				if arg[1] is not None:
 					# This is a flag, but a value was specified.
-					print("%s is a flag argument. No value should be specified."%(arg[0]))
+					msg  = "%s is a flag argument. No value should be "
+					msg += "specified."
+					msg %= arg[0]
+					print(msg)
 					PrintHelp(arglist)
 					exit(1)
 
 				arg_dictionary[proper_name] = True
 			elif typestring == 'string':
 				if arg[1] is None:
-					print("%s is a value argument. Please specify a value."%(arg[0]))
+					msg  = "%s is a value argument. Please specify a value."
+					msg %= arg[0]
+					print(msg)
 					PrintHelp(arglist)
 					exit(1)
 
@@ -97,7 +102,9 @@ def ParseArgs(arglist):
 
 			elif typestring == 'int':
 				if arg[1] is None:
-					print("%s is a value argument. Please specify a value."%(arg[0]))
+					msg  = "%s is a value argument. Please specify a value."
+					msg %= arg[0]
+					print(msg)
 					PrintHelp(arglist)
 					exit(1)
 
@@ -130,8 +137,9 @@ def ParseArgs(arglist):
 		if predicate is not None:
 			# This argument is predicated on the existence of another argument.
 			if predicate not in arg_dictionary:
-				msg = "The %s argument is only valid if the %s argument is specified."
-				msg = msg%(argument_specification[arg]['long_name'], predicate)
+				msg  = "The %s argument is only valid if the %s argument is "
+				msg += "specified."
+				msg %= (argument_specification[arg]['long_name'], predicate)
 				print(msg)
 				PrintHelp(arglist)
 				exit(1)
@@ -141,7 +149,7 @@ def ParseArgs(arglist):
 	# parsed. 
 	arg_dictionary['additional_args'] = additional_args
 
-	# Add the command line arguments into the config file arguments and rrturn
+	# Add the command line arguments into the config file arguments and return
 	# everything as a single object.
 
 	return combineArgsWithConfig(arg_dictionary)
@@ -178,15 +186,16 @@ def combineArgsWithConfig(arg_dict):
 		print("Access denied for '%s' (configuration file)."%config_fpath)
 		exit(1)
 
-	# pyfit requires that a value be specified for everything in the config file,
-	# even if you don't happen to be using it on this run. Make sure that there 
-	# is at least a key present in the dictionary for everything.
+	# pyfit requires that a value be specified for everything in the config 
+	# file, even if you don't happen to be using it on this run. Make sure 
+	# that there is at least a key present in the dictionary for everything.
 	for k in argument_specification:
 		if k not in config:
 			# The file doesn't need to reference itself.
 			if k != 'config_file':
-				msg  = "The configuration variable \'%s\' was missing from the"%k
-				msg += " configuration file \'%s\', please add it."%config_fpath
+				msg  = "The configuration variable \'%s\' was missing from the"
+				msg += " configuration file \'%s\', please add it."
+				msg %= (k, config_fpath)
 				print(msg)
 				exit(1)
 
@@ -205,7 +214,8 @@ def combineArgsWithConfig(arg_dict):
 			typestring = argument_specification[new_key]['type']
 			if typestring == 'flag':
 				if arg_dict['additional_args'][k] is not None:
-					msg = "%s is a flag argument. No value should be specified."
+					msg  = "%s is a flag argument. No value should be "
+					msg += "specified."
 					msg %= new_key
 					print(msg)
 					exit(1)
@@ -387,7 +397,8 @@ def PrintHelp(args):
 			lines.append(current_line)
 			help_str += '\n'.join(lines) + '\n'
 
-	help_str += '\nType --help --arg-name for details about a specific argument.\n'
+	help_str += '\nType --help --arg-name for details about a specific '
+	help_str += 'argument.\n'
 
 	print(help_str)
 
@@ -420,8 +431,8 @@ def ValidateArgs(args):
 
 	if args.neural_network_in == "":
 		msg  = "No input neural net was specified. Please specify one via "
-		msg += "either the configuration value \'neural_network_in\' or one of the "
-		msg += "following arguments:\n"
+		msg += "either the configuration value \'neural_network_in\' or one "
+		msg += "of the following arguments:\n"
 		msg += "\t--network-input-file=<nn file>\n"
 		msg += "\t-e=<nn file>\n\n"
 		print(msg)
@@ -455,16 +466,16 @@ def ValidateArgs(args):
 			return 1
 
 		if args.training_set_output_file == "":
-			msg  = "You have not specified a value for training_set_output_file. "
-			msg += "Please do this in the configuration file or with one of the "
-			msg += "following options:\n"
-			msg += "\t--training-set-out=<some file to write>\n"
+			msg  = "You have not specified a value for "
+			msg += "training_set_output_file. Please do this in the "
+			msg += "configuration file or with one of the  following options:"
+			msg += "\n\t--training-set-out=<some file to write>\n"
 			msg += "\t-a=<some file to write>\n\n"
 			print(msg)
 			PrintHelp(None)
 			return 1
 
-		if os.path.isfile(args.training_set_output_file):
+		if os.path.isfile(args.training_set_output_file) and not args.overwrite:
 			msg  = "The specified training set output file already exists. "
 			msg += "pyfit does not overwrite large files. Please change the "
 			msg += "name or delete it in order to continue."
@@ -479,7 +490,9 @@ def ValidateArgs(args):
 
 			os.remove(args.training_set_output_file)
 		except:
-			print("The training set output file does not appear to be writable.")
+			msg  = "The training set output file does not appear to be "
+			msg += "writable."
+			print()
 			return 1
 
 
@@ -502,9 +515,9 @@ def ValidateArgs(args):
 			return 1
 
 		if args.training_set_in == "":
-			msg  = "No input training set was specified. Please specify one via "
-			msg += "either the configuration value \'training_set_in\' or one of the "
-			msg += "following arguments:\n"
+			msg  = "No input training set was specified. Please specify one "
+			msg += "via either the configuration value \'training_set_in\' or "
+			msg += "one of the following arguments:\n"
 			msg += "\t--training-set-in=<training set file>\n"
 			msg += "\t-s=<training set file>\n\n"
 			print(msg)
@@ -512,9 +525,9 @@ def ValidateArgs(args):
 			return 1
 
 		if args.neural_network_out == "":
-			msg  = "No output neural net was specified. Please specify one via "
-			msg += "either the configuration value \'neural_network_out\' or one of the "
-			msg += "following arguments:\n"
+			msg  = "No output neural net was specified. Please specify one  "
+			msg += "via either the configuration value \'neural_network_out\' "
+			msg += "or one of the following arguments:\n"
 			msg += "\t--network-output-file=<nn file>\n"
 			msg += "\t-y=<nn file>\n\n"
 			print(msg)
@@ -546,7 +559,7 @@ def ValidateArgs(args):
 
 		
 
-		if os.path.isfile(args.neural_network_out):
+		if os.path.isfile(args.neural_network_out) and not args.overwrite:
 			print("The specified neural network output file already exists.")
 			return 1
 
@@ -574,9 +587,9 @@ def ValidateArgs(args):
 			if args.network_backup_dir[-1] != '/':
 				args.network_backup_dir += '/'
 
-			# If the network backup directory already exists, make sure it is empty.
-			# If it doesn't exist, create it. Also make sure that we can create 
-			# files in it and write to them.
+			# If the network backup directory already exists, make sure it is 
+			# empty. If it doesn't exist, create it. Also make sure that we 
+			# can create files in it and write to them.
 			if os.path.isdir(args.network_backup_dir):
 				try:
 					contents = os.listdir(args.network_backup_dir)
@@ -586,7 +599,7 @@ def ValidateArgs(args):
 					print(msg)
 					return 1
 
-				if len(contents) != 0:
+				if len(contents) != 0 and not args.overwrite:
 					print("The specified backup directory is not empty.")
 					return 1
 			else:
@@ -623,9 +636,9 @@ def ValidateArgs(args):
 			return 1
 
 		if args.validation_log_path == "":
-			msg  = "No path was specified for logging the validation loss of the "
-			msg += "neural network. Please specify a value for \'loss_log_path\' "
-			msg += "in the config file."
+			msg  = "No path was specified for logging the validation loss of "
+			msg += "the neural network. Please specify a value for "
+			msg += "\'loss_log_path\' in the config file."
 			print(msg)
 			PrintHelp(None)
 			return 1
@@ -643,7 +656,9 @@ def ValidateArgs(args):
 				return 1
 
 		if args.energy_volume_interval < 0:
-			print("Negative value specified for energy vs. volume record interval.")
+			msg  = "Negative value specified for energy vs. volume record "
+			msg += "interval."
+			print(msg)
 			return 1
 
 		if args.energy_volume_interval > 0:
@@ -698,199 +713,20 @@ def ValidateArgs(args):
 # configuration variables that control the functionality of the program. 
 # Items with 'short_name' or 'long_name' defined are treated as regular 
 # arguments and their usage is printed when the user specifies --help or -h.
-# Items without these variables defined ar assumed to be a part of the 
+# Items without these variables defined are assumed to be a part of the 
 # configuration file. They can only be passed as arguments using their long
 # name. For example, if an item is keyed as log_file, it can be specified as
 # an argument by putting --log-file=log.txt in the arguments to the program.
 # Help information will not be printed for an item like this, unless the user
 # types --help config or --help --log-file.
 #
-# pyfit assumes that a value is given for all arguments in the log file.
+# pyfit assumes that a value is given for all arguments in the config file.
 # Omission of a configuration variable is not allowed. If one is omitted,
-# the program will ask the user if they want it added to the config file for
-# them. 
-argument_specification = {
-	'config_file' : {
-		'short_name'       : '-j',
-		'long_name'        : '--config-file',
-		'type'             : 'string',
-		'predicate'        : None,
-		'description'      : 'The configuration file to use. Default is _pyfit_config.json.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'generate_training_set' : {
-		'short_name'       : '-g',
-		'long_name'        : '--generate-training-set',
-		'type'             : 'flag',
-		'predicate'        : None,
-		'description'      : 'When specified, the program will generate a training set file.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'training_set_output_file' : {
-		'short_name'       : '-a',
-		'long_name'        : '--training-set-out',
-		'type'             : 'string',
-		'predicate'        : 'generate_training_set',
-		'description'      : 'The file to write the training set to.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'dft_input_file' : {
-		'short_name'       : '-f',
-		'long_name'        : '--dft-file',
-		'type'             : 'string',
-		'predicate'        : 'generate_training_set',
-		'description'      : 'The file that contains the dft data.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'training_set_in' : {
-		'short_name'       : '-s',
-		'long_name'        : '--training-set-in',
-		'type'             : 'string',
-		'predicate'        : 'run_training',
-		'description'      : 'The training file to use.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'run_training' : {
-		'short_name'       : '-t',
-		'long_name'        : '--run-training',
-		'type'             : 'flag',
-		'predicate'        : None,
-		'description'      : 'Train the neural network.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'neural_network_in' : {
-		'short_name'       : '-e',
-		'long_name'        : '--network-input-file',
-		'type'             : 'string',
-		'predicate'        : None,
-		'description'      : 'The neural network file to load for training.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'neural_network_out' : {
-		'short_name'       : '-y',
-		'long_name'        : '--network-output-file',
-		'type'             : 'string',
-		'predicate'        : 'run_training',
-		'description'      : 'The neural network file to write when done training.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'training_iterations' : {
-		'short_name'       : '-i',
-		'long_name'        : '--training-iterations',
-		'type'             : 'int',
-		'predicate'        : 'run_training',
-		'description'      : 'How many training iterations to run.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'randomize' : {
-		'short_name'       : '-r',
-		'long_name'        : '--randomize-nn',
-		'type'             : 'flag',
-		'predicate'        : 'run_training',
-		'description'      : 'Randomize the neural network before training. Will not modify file.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'force_cpu' : {
-		'short_name'       : '-c',
-		'long_name'        : '--force-cpu',
-		'type'             : 'flag',
-		'predicate'        : 'run_training',
-		'description'      : 'Force training to take place on the cpu.',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'gpu_affinity' : {
-		'short_name'       : '-u',
-		'long_name'        : '--gpu-affinity',
-		'type'             : 'int',
-		'predicate'        : 'run_training',
-		'description'      : 'Train the network on the specified gpu (index).',
-		'long_description' : None,
-		'examples'         : []
-	},
-	'thread_count' : {
-		'short_name'       : '-n',
-		'long_name'        : '--n-threads',
-		'type'             : 'int',
-		'predicate'        : None,
-		'description'      : 'Force operations to use only this many threads.',
-		'long_description' : 'Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.',
-		'examples'         : []
-	},
-	'no_warn' : {
-		'short_name'       : '-w',
-		'long_name'        : '--no-warn',
-		'type'             : 'flag',
-		'predicate'        : 'run_training',
-		'description'      : 'Don\'t issue a warning and continue training if the a structural group will not be represented in the validation data set.',
-		'long_description' : '',
-		'examples'         : []
-	},
-	'overwrite' : {
-		'short_name'       : '-o',
-		'long_name'        : '--overwrite',
-		'type'             : 'flag',
-		'predicate'        : None,
-		'description'      : 'Overwrite output files if they already exist. Use at your own risk.',
-		'long_description' : '',
-		'examples'         : []
-	},
-	'log_path' : {
-		'type'        : 'string',
-		'description' : 'The path to the file to put logs into.'
-	},
-	'e_shift' : {
-		'type'        : 'float',
-		'description' : 'Used to modify energy values placed in the training file while it is being generated. file value = e_DFT + n_atoms*e_shift'
-	},
-	'network_backup_dir' : {
-		'type'        : 'string',
-		'description' : 'The directory to place backups of the neural network in during training.'
-	},
-	'network_backup_interval' : {
-		'type'        : 'int',
-		'description' : 'The interval to backup the neural network on. 0 = don\'t store backups.'
-	},
-	'loss_log_path' : {
-		'type'        : 'string',
-		'description' : 'The file to store the training error of the neural network in. If left blank, error will not be stored.'
-	},
-	'validation_log_path' : {
-		'type'        : 'string',
-		'description' : 'The file to store the validation error of the neural network in. If left blank, error will not be stored.'
-	},
-	'validation_interval' : {
-		'type'        : 'int',
-		'description' : 'The interval to calculate the validation error on. 0 = don\'t calculate validation.'
-	},
-	'energy_volume_file' : {
-		'type'        : 'string',
-		'description' : 'The file to store the energy vs. volume data for the network in.'
-	},
-	'energy_volume_interval' : {
-		'type'        : 'int',
-		'description' : 'The interval to dump energy vs. volume into the file on.'
-	},
-	'validation_ratio' : {
-		'type'        : 'float',
-		'description' : 'The ratio of validation inputs to total inputs.'
-	},
-	'learning_rate' : {
-		'type'        : 'float',
-		'description' : 'The learning rate to use when training the neural network.'
-	},
-	'max_lbfgs_iterations' : {
-		'type'        : 'int',
-		'description' : 'The maximum number of LBFGS optimization iterations per training iteration. A value of 10 is usually sufficient.'
-	}
-}
+# the program will tell the user that they need to add it.
+config_default_path = sys.path[0]
+if config_default_path[-1] != '/':
+	config_default_path += '/'
+
+arg_file_path = config_default_path + 'pyfit_arglist.json'
+with open(arg_file_path, 'r') as file:
+	argument_specification = json.loads(file.read())
