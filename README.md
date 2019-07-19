@@ -1,5 +1,5 @@
 # pyfit
-Flexible system for training neural networks to interpolate DFT data. 
+System for training neural networks to interpolate DFT data. 
 
 ## Notes
 
