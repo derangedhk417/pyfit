@@ -32,9 +32,13 @@ This file specifies everything that the program should do when it runs. The defa
 
 ### Running pyfit
 
+pyfit will automatically use a CUDA device if available. You can pass `--force-cpu` to it if you don't want this to happen. If you are running pyfit on a cluster, in a job with multiple simultaneous runs of pyfit, you can pass `--gpu-affinity=#` to it, in order to assign a particular run to a particular GPU. On some systems, PyTorch will actually have worse performance on a GPU. Additionally, some network architectures will cause poor performance if too many CPU cores are used. You may want to experiment with different values of `--n-threads=#` in order to find the best value.
+  
+pyfit tries not to overwrite existing files that might be important. If it is giving you an error message and you don't care, pass --overwrite in the command line.
+
 #### Generate Training Set
 
-You can run pyfit with no arguments. In this case, it will just use information from the config file to guide the run. In order to get pyfit to convert some DFT data into a training set, you need the following:
+You can run pyfit with no arguments. In this case, it will just use information from the config file to guide the run. In order to get pyfit to convert DFT data into a training set, you need the following:
 
 1) A file that contains one or more poscar structures with the structure energy attached to them. See doc/ for format.
 2) A network potential file. See doc/ for format.
@@ -69,7 +73,7 @@ What portion of the training set should be used as training data. For example, a
 Standard neural network learning rate value.
 
 `max_lbfgs_iterations`  
-pyfit uses the LBFGS optimizer for training. This is substantially more effective than SGD and is the best optimizer that has been used so far. This parameter controls the internal functionality of the optimizer. See [this](https://pytorch.org/docs/stable/optim.html?highlight=lbfgs#torch.optim.LBFGS)
+pyfit uses the LBFGS optimizer for training. This is substantially more effective than SGD and is the best optimizer that has been used so far. This parameter controls the internal functionality of the optimizer. See [here](https://pytorch.org/docs/stable/optim.html?highlight=lbfgs#torch.optim.LBFGS).
 
 `network_backup_interval`  
 How often to backup the neural network.
@@ -92,3 +96,6 @@ How often to store energy volume data. This information is meant to be graphed a
 `energy_volume_file`  
 Where to store the energy vs. volume information. The first line will be the per-atom volume of each structure. All subsequent lines will be the iteration, followed by the per-atom energy of each structure at that training iteration. This file is large, and this process is expensive. Exporting too frequently will slow things down.
 
+## Notes
+
+- All of the files in src/ are meant to be reasuable. This means that you can import them and use them in your own code without too much effort. See doc/ for more details.
