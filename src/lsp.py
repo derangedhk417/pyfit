@@ -17,7 +17,7 @@ def GenerateLocalStructureParams(neighbor_list, potential_config, sys_config):
 	n_total     = 0
 	for struct in neighbor_list:
 		for atom in struct:
-			n_total += len(atom)**2
+			n_total += (len(atom)**2 - len(atom)) / 2
 	n_processed = 0
 
 	progress = ProgressBar(
@@ -37,7 +37,7 @@ def GenerateLocalStructureParams(neighbor_list, potential_config, sys_config):
 		# Iterate over all structures.
 		parameters_for_structure = np.zeros((len(struct), parameters_per_atom))
 		for idx, atom_neighbors in enumerate(struct):
-			processed += len(atom_neighbors)**2
+			processed += (len(atom_neighbors)**2 - len(atom_neighbors)) / 2
 			# Iterate over each atom in the structure and compute the 
 			# parameters for it.
 			parameters_for_structure[idx, :] = computeParameters(

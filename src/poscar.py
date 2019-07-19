@@ -32,7 +32,7 @@ class PoscarLoader:
 		lines = text.split("\n")
 
 		progress = ProgressBar("Poscar Files ", 22, len(lines), update_every=50)
-
+		progress.estimate = False
 		# This code originally had validation checks for all values.
 		# For now, they have been removed. Experience using the program
 		# for quite a while has led me to believe that they are uneccessary.

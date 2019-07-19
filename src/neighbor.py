@@ -22,10 +22,10 @@ def GenerateNeighborList(structures, potential):
 	# First we will compute the total number of atoms that need to be
 	# processed in order to get an estimate of the time this will take
 	# to complete.
-	n_total = sum([struct.n_atoms for struct in structures])
+	n_total = sum([struct.n_atoms**2 for struct in structures])
 
 	progress = ProgressBar("Neighbor List ", 22, n_total, update_every = 25)
-
+	progress.estimate = False
 	# In some cases this needs to be multiplied by 1.5.
 	# TODO: Figure out exactly when, I haven't encountered this yet.
 	cutoff = potential.config.cutoff_distance * 1.0
@@ -129,7 +129,7 @@ def GenerateNeighborList(structures, potential):
 
 		# Update the performance information so we can report
 		# progress to the user.
-		n_processed += structure.n_atoms
+		n_processed += structure.n_atoms**2
 		progress.update(n_processed)
 	
 	progress.update(n_total)

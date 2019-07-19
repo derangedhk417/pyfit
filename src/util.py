@@ -5,7 +5,23 @@ import numpy as np
 import time
 from datetime import datetime
 
-import code
+import atexit
+
+class Log:
+	def __init__(self, file_name, max_col=80):
+		self.file    = open(file_name, 'w')
+		self.max_col = max_col
+		self.indent  = 0
+
+	def log(self, text):
+		pass
+
+	@atexit.register
+	def __del__(self):
+		try:
+			self.file.close()
+		except:
+			print("Failed to close log file. It may be incomplete.")
 
 # Returns the dimensions of the current terminal window or a good guess if 
 # something goes wrong.
@@ -25,6 +41,8 @@ class ProgressBar:
 		self.current       = 0.0
 		self.last          = 0.0
 		self.remaining     = 0
+		self.width         = int(terminal_dims()[1] / 2.5)
+		self.estimate      = True
 		self.start_time    = datetime.now()
 		self.update_count  = 0
 		self.times         = [] # Timing of chunks of work.
@@ -38,29 +56,30 @@ class ProgressBar:
 		self.current      =  value
 		self.update_count += 1
 
-		work           = int(self.current - self.last)
-		if work != 0:
-			self.last      = self.current
-			timenow        = time.time_ns()
-			timing         = timenow - self.last_time
-			self.last_time = timenow
-
-			self.times.append(timing)
-			self.sizes.append(work)
-
-			# Convert to numpy arrays and calculate the average
-			# time per unit work.
-			times = np.array(self.times)
-			works = np.array(self.sizes)
-
-			avg = (times / works).mean()
-
-			# Figure out how much work is left.
-			self.remaining = self.total - self.current
-			self.remaining = self.remaining * avg
-
 		if self.update_count % self.update_every == 0 or self.update_count == 1:
-			self.display()
+			work = int(self.current - self.last)
+			should_estimate = (datetime.now() - self.start_time).seconds > 15
+			if work != 0:
+				self.last      = self.current
+				timenow        = time.time_ns()
+				timing         = timenow - self.last_time
+				self.last_time = timenow
+
+				self.times.append(timing)
+				self.sizes.append(work)
+
+				# Convert to numpy arrays and calculate the average
+				# time per unit work.
+				times = np.array(self.times)
+				works = np.array(self.sizes)
+
+				avg = (times / works).mean()
+
+				# Figure out how much work is left.
+				self.remaining = self.total - self.current
+				self.remaining = self.remaining * avg
+
+			self.display(est=should_estimate)
 
 	def finish(self):
 		self.current = self.total
@@ -77,13 +96,13 @@ class ProgressBar:
 	# of ticks to draw in the progress bar.
 	def get_display(self):
 		percentage = (self.current / self.total) * 100
-		ticks      = int(np.floor((self.current / self.total) * 35))
+		ticks      = int(np.floor((self.current / self.total) * self.width))
 		return (ticks, percentage)
 
-	def display(self, _end='\r'):
+	def display(self, est=False, _end='\r'):
 		ticks, percentage = self.get_display()
 		fill   = '='  * ticks
-		space  = ' ' * (35 - ticks)
+		space  = ' ' * (self.width - ticks)
 		disp   = '%' + '%05.2f'%(percentage)
 
 		rem_seconds = int(self.remaining // int(1e9))
@@ -97,7 +116,7 @@ class ProgressBar:
 			rem_seconds
 		)
 
-		if self.current == self.total:
+		if self.current == self.total or not self.estimate or not est:
 			rem = ''
 
 		prefix = self.prefix + (' ' * (self.prefix_width - len(self.prefix)))

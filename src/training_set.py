@@ -77,6 +77,7 @@ class TrainingSet:
 		self.config     = potential.config
 
 		self.potential_type = 1
+
 		self.n_structures   = poscar.n_structures
 		self.n_atoms        = poscar.n_atoms
 
@@ -144,6 +145,7 @@ class TrainingSet:
 				"Writing LSParams ", 
 				22, self.n_atoms, update_every = 50
 			)
+			progress.estimate = False
 
 			atom_idx = 0
 			for struct in self.structures:

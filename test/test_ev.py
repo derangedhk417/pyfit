@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
 			# Compare the ev file from the old code to the one
 			# that was just produced.
-			if not compare('ev.txt', ev):
+			if not compare('ev.nogit.txt', ev):
 				print("Comparison failed, exiting . . . ")
 				break
 		else:
