@@ -22,6 +22,21 @@ A typical run of pyfit will include the following steps.
 5) Split the training set data up into validation and training data.
 6) Train the neural network for the specified number of iterations.
 
+## Dependencies
+
+- PyTorch
+- Python 3.x
+- numpy
+- A Unix OS of some kind.
+
+Usually the following command line will suffice:
+
+```bash
+sudo pip3 install torch torchvision numpy
+```
+
+If you want to use CUDA to accelerate the training process, you'll need to install that as well.
+
 ## Getting Started
 
 The easiest way to start using pyfit is to clone this repository, cd into it and run ./install.sh. pyfit gets the majority of its direction from its config file, which is a json file. 
