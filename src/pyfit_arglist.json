@@ -5,7 +5,6 @@
 		"type"             : "string",
 		"predicate"        : null,
 		"description"      : "The configuration file to use. Default is _pyfit_config.json.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"generate_training_set" : {
@@ -14,7 +13,6 @@
 		"type"             : "flag",
 		"predicate"        : null,
 		"description"      : "When specified, the program will generate a training set file.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"training_set_output_file" : {
@@ -23,7 +21,6 @@
 		"type"             : "string",
 		"predicate"        : "generate_training_set",
 		"description"      : "The file to write the training set to.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"dft_input_file" : {
@@ -32,7 +29,6 @@
 		"type"             : "string",
 		"predicate"        : "generate_training_set",
 		"description"      : "The file that contains the dft data.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"training_set_in" : {
@@ -41,7 +37,6 @@
 		"type"             : "string",
 		"predicate"        : "run_training",
 		"description"      : "The training file to use.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"run_training" : {
@@ -50,7 +45,6 @@
 		"type"             : "flag",
 		"predicate"        : null,
 		"description"      : "Train the neural network.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"neural_network_in" : {
@@ -59,7 +53,6 @@
 		"type"             : "string",
 		"predicate"        : null,
 		"description"      : "The neural network file to load for training.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"neural_network_out" : {
@@ -68,7 +61,6 @@
 		"type"             : "string",
 		"predicate"        : "run_training",
 		"description"      : "The neural network file to write when done training.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"training_iterations" : {
@@ -77,7 +69,6 @@
 		"type"             : "int",
 		"predicate"        : "run_training",
 		"description"      : "How many training iterations to run.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"randomize" : {
@@ -86,7 +77,6 @@
 		"type"             : "flag",
 		"predicate"        : "run_training",
 		"description"      : "Randomize the neural network before training. Will not modify file.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"force_cpu" : {
@@ -95,7 +85,6 @@
 		"type"             : "flag",
 		"predicate"        : "run_training",
 		"description"      : "Force training to take place on the cpu.",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"gpu_affinity" : {
@@ -104,7 +93,6 @@
 		"type"             : "int",
 		"predicate"        : "run_training",
 		"description"      : "Train the network on the specified gpu (index).",
-		"long_description" : null,
 		"examples"         : []
 	},
 	"thread_count" : {
@@ -113,7 +101,6 @@
 		"type"             : "int",
 		"predicate"        : null,
 		"description"      : "Force operations to use only this many threads.",
-		"long_description" : "Force operations to use only this many threads. This flag does not guarantee that pytorch will not ignore instructions and use more threads anyways. This does guarantee that all operations implemented in pyfit will be limited to this many threads.",
 		"examples"         : []
 	},
 	"no_warn" : {
@@ -121,8 +108,7 @@
 		"long_name"        : "--no-warn",
 		"type"             : "flag",
 		"predicate"        : "run_training",
-		"description"      : "Don\"t issue a warning and continue training if the a structural group will not be represented in the validation data set.",
-		"long_description" : "",
+		"description"      : "Don't issue a warning and continue training if the a structural group will not be represented in the validation data set.",
 		"examples"         : []
 	},
 	"overwrite" : {
@@ -131,7 +117,6 @@
 		"type"             : "flag",
 		"predicate"        : null,
 		"description"      : "Overwrite output files if they already exist. Use at your own risk.",
-		"long_description" : "",
 		"examples"         : []
 	},
 	"log_path" : {

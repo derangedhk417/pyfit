@@ -238,6 +238,10 @@ def combineArgsWithConfig(arg_dict):
 					exit(1)
 			else:
 				config[new_key] = arg_dict['additional_args'][k]
+		else:
+			msg = "Unrecognized configuration variable \'%s\'"%k
+			print(msg)
+			exit(1)
 
 	# Make sure that no unrecognized configuration values are present.
 	for k in config:
@@ -322,10 +326,7 @@ def stripCStyleComments(string):
 # be a non-argument configuration variable, in which case information from 
 # config.py will be printed.
 def PrintHelp(args):
-	if args is not None:
-		program_name = args[0]
-	else:
-		program_name = 'pyfit.py'
+	program_name = 'pyfit.py'
 	# Print the whole help message.
 
 	# We need a list of all short names, all long names and all 
@@ -354,7 +355,7 @@ def PrintHelp(args):
 
 	names_width = 4 + short_name_width + 2 + long_name_width + 4
 
-	help_str  = 'Usage: python3 %s [-g] [-t] [other options]\n\n'%program_name
+	help_str  = 'Usage: python3 %s [options]\n\n'%program_name
 	help_str += 'options:\n'
 	for sname, lname, desc in zip(short_names, long_names, descriptions):
 		sdiff = short_name_width - len(sname)
@@ -396,9 +397,6 @@ def PrintHelp(args):
 
 			lines.append(current_line)
 			help_str += '\n'.join(lines) + '\n'
-
-	help_str += '\nType --help --arg-name for details about a specific '
-	help_str += 'argument.\n'
 
 	print(help_str)
 
