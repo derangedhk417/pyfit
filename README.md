@@ -31,6 +31,8 @@ This will initialize an interactive console at that line of code and allow you t
 3) Implement non-cartesian poscar coordinates.
 4) Implement a .to method in all classes that store tensors.
 5) Decide how to approach logging, without cluttering the code too much.
+6) Make sure to log the configuration.
+6) Add option to append datetime to certain files.
+6) Make it possible to configure pyfit so that it reads gpu affinity from an environment variable.
 6) Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().
-7) Handle cpu vs. gpu, as well as thread count and gpu affinity
 8) Add --slurm option, where the system will automatically pick cpu vs. gpu as well as thread count and affinity based on environment variables.

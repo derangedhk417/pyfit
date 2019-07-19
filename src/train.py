@@ -8,6 +8,7 @@
 # dumping error information during the training.
 
 import numpy       as np
+import os
 import torch
 import torch.nn    as nn
 import torch.optim as optim
@@ -15,7 +16,6 @@ import torch.optim as optim
 from copy import deepcopy
 from util import ProgressBar
 
-import code
 
 # Given a training set file and a validation ratio, this class will construct
 # a set of torch tensors that are necessary to send input to the neural 
@@ -319,6 +319,12 @@ class Trainer:
 	# parses its command line arguments. You can also just as easily make
 	# your own if you want to call this code from another program.
 	def __init__(self, network_potential, training_set, config):
+		# Handle enforcement of threading restrictions.
+		if config.thread_count != 0:
+			os.environ["OMP_NUM_THREADS"] = str(config.thread_count)
+			os.environ["MKL_NUM_THREADS"] = str(config.thread_count)
+			torch.set_num_threads(config.thread_count)
+
 		# In order to actually train a network, we need an optimizer,
 		# a loss calculating function, some tensors for that function,
 		# a set of inputs and some parameters for how to run the training.

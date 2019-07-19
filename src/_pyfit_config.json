@@ -9,7 +9,7 @@
 	"training_set_in"             : "test.nogit.lsparam.dat",
 	"neural_network_in"           : "test/nn/small.nn.dat",
 	"neural_network_out"          : "test.nogit.nn.dat",
-	"training_iterations"         : 30,
+	"training_iterations"         : 300,
 	"randomize"                   : false,
 	"force_cpu"                   : false,
 	"gpu_affinity"                : 0,
