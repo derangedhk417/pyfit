@@ -207,7 +207,6 @@ class TrainingSet:
 			return True
 
 		for group, name in zip(*self.getAllByGroup()):
-			code.interact(local=locals())
 			sub_ratio = validation_ratio - (2 / len(group))
 
 			training_to_select = min([

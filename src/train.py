@@ -33,6 +33,7 @@ class TorchTrainingData:
 	def __init__(self, training_set, validation_ratio):
 		self.tensor_type = torch.float32
 		self.np_type     = np.float32
+		self.val_ratio   = validation_ratio
 		# The first thing we need to do is split the training set data up into
 		# training and validation data. In order for the validation data to be
 		# useable, we need to ensure that it represents a proportionate cross
@@ -185,6 +186,25 @@ class TorchTrainingData:
 			volumes
 		)
 
+	def to(self, device):
+		self.train_energies    = self.train_energies.to(device)
+		self.train_reciprocals = self.train_reciprocals.to(device)
+		self.train_lsp         = self.train_lsp.to(device)
+		self.train_n_inputs    = self.train_n_inputs.to(device)
+		self.train_reduction   = self.train_reduction.to(device)
+
+		if self.val_ratio != 1.0:
+			self.val_energies    = self.val_energies.to(device)
+			self.val_reciprocals = self.val_reciprocals.to(device)
+			self.val_lsp         = self.val_lsp.to(device)
+			self.val_n_inputs    = self.val_n_inputs.to(device)
+			self.val_reduction   = self.val_reduction.to(device)
+
+		return self
+
+	def cpu(self):
+		return self.to('cpu')
+
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
 	def __init__(self, network_potential, reduction_matrix):
@@ -236,12 +256,14 @@ class TorchNetwork(nn.Module):
 	# the object. 
 	def getNetworkValues(self):
 		output_layers = []
-		for layer in self.layers:
+		layer_copy    = deepcopy(self.layers)
+
+		for layer in layer_copy:
 			nodes = []
 			for node_idx in range(len(layer.weight.data)):
 				node = []
-				node.append(layer.weight.data[node_idx].tolist())
-				node.append(layer.bias.data[node_idx].item())
+				node.append(layer.weight.cpu().data[node_idx].tolist())
+				node.append(layer.bias.cpu().data[node_idx].item())
 				nodes.append(node)
 			output_layers.append(nodes)
 
@@ -267,6 +289,15 @@ class TorchNetwork(nn.Module):
 
 		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
+
+	def to(self, device):
+		super(TorchNetwork, self).to(device)
+		self.reduction_matrix = self.reduction_matrix.to(device)
+		self.offset           = self.offset.to(device)
+		return self
+
+	def cpu(self):
+		return self.to('cpu')
 
 	def setReductionMatrix(self, matrix):
 		self.reduction_matrix = matrix
@@ -319,6 +350,14 @@ class Trainer:
 		# matrix. This will get switched out temporarily when computing
 		# the validation loss.
 		self.nn = TorchNetwork(network_potential, self.dataset.train_reduction)
+
+		if torch.cuda.is_available() and not config.force_cpu:
+			self.device = torch.device("cuda:%i"%config.gpu_affinity)
+		else:
+			self.device = torch.device('cpu')
+
+		self.nn      = self.nn.to(self.device)
+		self.dataset = self.dataset.to(self.device)
 
 		self.optimizer = optim.LBFGS(
 			self.nn.getParameters(), 
@@ -383,7 +422,7 @@ class Trainer:
 			n_structures  = self.dataset.train_reduction.shape[0]
 			self.energies = np.zeros((energy_saves, n_structures))
 			self.reciprocals = self.dataset.train_reciprocals
-			self.reciprocals = self.reciprocals.numpy().transpose()[0]
+			self.reciprocals = self.reciprocals.cpu().numpy().transpose()[0]
 
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
@@ -430,7 +469,7 @@ class Trainer:
 					file.write(line)
 
 		# Write the final neural network file.
-		layers = self.nn.getNetworkValues()
+		layers = self.nn.cpu().getNetworkValues()
 		tmp    = deepcopy(self.potential)
 		tmp.layers = layers
 		tmp.writeNetwork(self.network_out)
@@ -440,7 +479,8 @@ class Trainer:
 	def _train_loop(self):
 		progress = ProgressBar(
 			"Training ", 
-			22, self.iterations + int(self.iterations == 0), update_every = 1
+			22, self.iterations + int(self.iterations == 0), 
+			update_every = 1
 		)
 
 		while self.iteration <= self.iterations:
