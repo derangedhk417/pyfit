@@ -128,10 +128,10 @@ def compareTrainingSets(new, old):
 
 if __name__ == '__main__':
 	msg  = "This script requires the test data, which is very large and "
-	msg += "therefore not in the git repo. You can download it from here:\n "
+	msg += "therefore not in the git repo. You can download it from here:\n"
 	msg += "https://drive.google.com/file/d/1rzmByWis455mQLgmnK7nnSfDA2zoDeW7/"
 	msg += "view?usp=sharing\n"
-	msg += "Extract it in pyfit/test/" 
+	msg += "Extract input/ and ref/ into pyfit/test/\n" 
 	print(msg)
 
 	lsparam_names = ['out/%02i.lsparam.nogit.dat'%i for i in range(10)]
