@@ -2,7 +2,6 @@
 # This file contains classes and methods that assist in reading and writing
 # training set files in the custom format used for neural network potentials.
 
-import code
 import numpy as np
 
 # this parses and stores the header information

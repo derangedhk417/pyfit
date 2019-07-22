@@ -9,7 +9,6 @@ import subprocess
 import os
 import sys
 import numpy as np
-import code
 
 # This should remove any complications related to executing the
 # program from this working directory.
@@ -65,6 +64,13 @@ def compare(fnew, fold):
 	return True
 
 if __name__ == '__main__':
+	msg  = "This script requires the test data, which is very large and "
+	msg += "therefore not in the git repo. You can download it from here:\n "
+	msg += "https://drive.google.com/file/d/1rzmByWis455mQLgmnK7nnSfDA2zoDeW7/"
+	msg += "view?usp=sharing\n"
+	msg += "Extract it in pyfit/test/" 
+	print(msg)
+
 	nn_names      = ['nn/%02i.nn.dat'%i       for i in range(10)]
 	lsparam_names = ['ref/%02i.lsparam.dat'%i for i in range(10)]
 	ev_names      = ['ref/%02i.ev.dat'%i      for i in range(10)]

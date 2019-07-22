@@ -8,7 +8,6 @@ import json
 import util
 import os
 import sys
-import code
 
 from datetime import datetime
 from util     import Log
