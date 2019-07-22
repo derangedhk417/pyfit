@@ -92,6 +92,7 @@ def RunPyfit(config):
 		if config.randomize:
 			log.log("Randomizing network potential parameters.")
 			potential.randomizeNetwork()
+			potential.loadNetwork(None, values_loaded=True)
 
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.

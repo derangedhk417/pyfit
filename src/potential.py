@@ -55,7 +55,7 @@ class NetworkPotential:
 
 		# If the network needed to be randomized, then the weight and bias
 		# values are already loaded into the flat array.
-		self._loadNetwork(
+		self.loadNetwork(
 			lines, 
 			values_loaded=self.config.randomize
 		)
@@ -116,7 +116,7 @@ class NetworkPotential:
 	#
 	# If values_loaded = True, assumes that self.network_values has been
 	# initialized already.
-	def _loadNetwork(self, lines, values_loaded=False):
+	def loadNetwork(self, lines, values_loaded=False):
 		if not values_loaded:
 			self.network_values = []
 			for line in lines[8:]:

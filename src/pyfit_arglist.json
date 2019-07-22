@@ -126,6 +126,13 @@
 		"predicate"        : null,
 		"description"      : "Ensure that all output file names are unique by naming them by the date and time. Format is <original_name>.<datetime>.<original_extension>"
 	},
+	"validation_split_seed" : {
+		"short_name"       : "-v",
+		"long_name"        : "--validation-split-seed",
+		"type"             : "int",
+		"predicate"        : "run_training",
+		"description"      : "Seed the numpy rng with this number before deciding how to split the validation and training data. Useful for repeatability of results. Note: PyTorch does not guarentee determinism, so results may not be exact. Note: 0 is interpreted to mean that the system should use the default, probabilistic, seed."
+	},
 	"log_path" : {
 		"type"        : "string",
 		"description" : "The path to the file to put logs into."

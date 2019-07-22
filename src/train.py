@@ -30,7 +30,7 @@ from util import ProgressBar
 # This class will produce one copy of the above values for training and one
 # for validation.
 class TorchTrainingData:
-	def __init__(self, training_set, validation_ratio):
+	def __init__(self, training_set, validation_ratio, seed=None):
 		self.tensor_type = torch.float32
 		self.np_type     = np.float32
 		self.val_ratio   = validation_ratio
@@ -48,6 +48,9 @@ class TorchTrainingData:
 
 		# First, get a list of training inputs by their group.
 		by_group, group_names = training_set.getAllByGroup()
+
+		if seed is not None and seed != 0:
+			np.random.seed(seed)
 
 		# Within each group, select the largest and smallest structure and put
 		# it into the set of structures that will be used for training. Select
@@ -340,6 +343,7 @@ class Trainer:
 		# a loss calculating function, some tensors for that function,
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
+		self.seed            = config.validation_split_seed
 		self.training_set    = training_set
 		self.potential       = network_potential
 		self.network_out     = config.neural_network_out
@@ -360,8 +364,15 @@ class Trainer:
 		# Setup the training and validation structures.
 		self.dataset = TorchTrainingData(
 			training_set,
-			config.validation_ratio
+			config.validation_ratio,
+			self.seed
 		)
+
+		if self.log is not None:
+			if self.seed != 0:
+				self.log.log("Used np.random.seed(%i)"%self.seed)
+			else:
+				self.log.log("Used default seed (probabilistic behavior).")
 
 		# To start, initialize the network with the training set reduction 
 		# matrix. This will get switched out temporarily when computing

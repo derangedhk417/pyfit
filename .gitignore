@@ -2,3 +2,4 @@
 *.nogit.*
 test/input/*
 test/ref/*
+clean.sh

@@ -28,5 +28,6 @@
 	"max_lbfgs_iterations"        : 10,
 	"no_warn"                     : false,
 	"overwrite"                   : false,
-	"unique"                      : false
+	"unique"                      : false,
+	"validation_split_seed"       : 0
 }
