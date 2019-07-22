@@ -151,8 +151,6 @@ class PotentialConfig:
 		equality &= self.n_legendre_polynomials == other.n_legendre_polynomials
 		equality &= self.legendre_orders        == other.legendre_orders
 		equality &= self.r0                     == other.r0
-		equality &= self.BOP_param0             == other.BOP_param0
-		equality &= self.BOP_parameters         == other.BOP_parameters
 		equality &= self.layer_sizes            == other.layer_sizes
 
 		return equality

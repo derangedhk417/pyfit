@@ -9,7 +9,7 @@
 	"training_set_in"             : "test.nogit.lsparam.dat",
 	"neural_network_in"           : "test/nn/best.nn.dat",
 	"neural_network_out"          : "test.nogit.nn.dat",
-	"training_iterations"         : 1500,
+	"training_iterations"         : 100,
 	"randomize"                   : false,
 	"force_cpu"                   : false,
 	"gpu_affinity"                : 0,
@@ -27,5 +27,6 @@
 	"learning_rate"               : 0.05,
 	"max_lbfgs_iterations"        : 10,
 	"no_warn"                     : true,
-	"overwrite"                   : false
+	"overwrite"                   : false,
+	"unique"                      : false
 }

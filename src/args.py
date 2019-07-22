@@ -410,6 +410,8 @@ def ValidateArgs(args):
 	# Firstly, make sure that all of the relevant input files exist and are 
 	# accessible.
 
+	time_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
 	if args.gpu_affinity < 0:
 		print("Negative gpu affinity specified.")
 		return 1
@@ -427,14 +429,56 @@ def ValidateArgs(args):
 		except:
 			print("The log file does not appear to be writable.")
 			return 1
+	else:
+		args.log_path = 'pyfit_log.%s.txt'%time_str
+
+	if args.unique:
+		# We need to modify all of the output file names to contain the date
+		# & time string.
+		def number(name, num):
+			parts   = name.split('.')
+			result  = parts[0]
+			result += '.%05i.%s'%(num, '.'.join(parts[1:]))
+			return result
+			
+
+		def unique(name):
+			if name != "" and not name.isspace():
+				idx     = 0
+				path_to = '/'.join(name.split('/')[:-1])
+				if path_to == '':
+					path_to = None
+
+				# This loop looks bad but I sincerely doubt that anyone will
+				# every let 2**32 runs go by without cleaning the directory.
+				while idx < 2**32:
+					all_files = os.listdir(path_to)
+					test_name = number(name, idx)
+					if test_name not in all_files:
+						return test_name
+					idx += 1
+			else:
+				return name
+
+		args.training_set_output_file = unique(args.training_set_output_file)
+		args.neural_network_out       = unique(args.neural_network_out)
+		args.network_backup_dir       = unique(args.network_backup_dir)
+		args.loss_log_path            = unique(args.loss_log_path)
+		args.validation_log_path      = unique(args.validation_log_path)
+		args.energy_volume_file       = unique(args.energy_volume_file)
+
+		if not os.path.isfile(args.training_set_in) and args.run_training:
+			# It's ok if the training set doesn't exist, as long as 
+			# we are about to generate it.
+			args.training_set_in = args.training_set_output_file
+
 
 	log = Log(args.log_path)
 
 	# ==============================
 	# Logging
 	# ==============================
-
-	time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+	
 	log.log("run starting %s"%(time_str))
 
 	# Log the configuration file for this run.

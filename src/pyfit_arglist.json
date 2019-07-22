@@ -119,6 +119,13 @@
 		"description"      : "Overwrite output files if they already exist. Use at your own risk.",
 		"examples"         : []
 	},
+	"unique" : {
+		"short_name"       : "-m",
+		"long_name"        : "--unique",
+		"type"             : "flag",
+		"predicate"        : null,
+		"description"      : "Ensure that all output file names are unique by naming them by the date and time. Format is <original_name>.<datetime>.<original_extension>"
+	},
 	"log_path" : {
 		"type"        : "string",
 		"description" : "The path to the file to put logs into."

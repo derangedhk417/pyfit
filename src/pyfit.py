@@ -78,6 +78,13 @@ def RunPyfit(config):
 			potential    = NetworkPotential(log=log)
 			potential    = potential.loadFromFile(config.neural_network_in)
 
+			if potential.config != training_set.config:
+				msg  = "The training set file and network potential file have "
+				msg += "different configurations. Please check them."
+				print(msg)
+				log.log("potential.config != training_set.config")
+				return 1
+
 			if not config.no_warn:
 				if not training_set.generateWarnings(config.validation_ratio):
 					return 1
