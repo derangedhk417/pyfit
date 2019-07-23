@@ -4,7 +4,7 @@
 {
 	"generate_training_set"       : false,
 	"training_set_output_file"    : "test.nogit.lsparam.dat",
-	"dft_input_file"              : "test/input/ab.poscar.dat",
+	"dft_input_file"              : "test/input/3-ADAM-DC-L-A-POSCAR-E-full.dat",
 	"run_training"                : false,
 	"training_set_in"             : "test.nogit.lsparam.dat",
 	"neural_network_in"           : "test/nn/best.nn.dat",
@@ -26,7 +26,7 @@
 	"validation_ratio"            : 0.9,
 	"learning_rate"               : 0.05,
 	"max_lbfgs_iterations"        : 10,
-	"no_warn"                     : true,
+	"no_warn"                     : false,
 	"overwrite"                   : false,
 	"unique"                      : false,
 	"validation_split_seed"       : 0
