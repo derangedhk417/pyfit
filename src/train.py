@@ -305,6 +305,23 @@ class TorchNetwork(nn.Module):
 	def setReductionMatrix(self, matrix):
 		self.reduction_matrix = matrix
 
+	def randomize_self(self):
+		for param in self.params:
+			if len(param.data.shape) == 2:
+				# This is a two dimensional parameter and therefore
+				# a set of weights.
+				for node_idx in range(len(param.data)):
+					for weight_idx in range(len(param.data[node_idx])):
+						val = np.random.uniform(-0.5, 0.5)
+						param.data[node_idx][weight_idx] = val
+						
+			elif len(param.data.shape) == 1:
+				# This is a one dimensional parameter and therefore
+				# an array of biases.
+				for node_idx in range(len(param.data)):
+					param.data[node_idx] = np.random.uniform(-0.5, 0.5)
+					
+
 # This class ties everything together and performs the actual training,
 # progress reporting and saving of the resulting files. I considered making
 # this a few functions instead of a class, but it occured to me that making
@@ -344,6 +361,7 @@ class Trainer:
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
+		self.restart_error   = config.error_restart_level
 		self.training_set    = training_set
 		self.potential       = network_potential
 		self.network_out     = config.neural_network_out
@@ -360,6 +378,10 @@ class Trainer:
 		self.energy_interval = config.energy_volume_interval
 		self.learning_rate   = config.learning_rate
 		self.max_lbfgs       = config.max_lbfgs_iterations
+
+
+		self.restarts        = 0
+		self.need_to_restart = False
 
 		# Setup the training and validation structures.
 		self.dataset = TorchTrainingData(
@@ -484,6 +506,10 @@ class Trainer:
 				self.log.log("SIGINT detected. Cleaning up . . . ")
 				self.log.log("Iteration Reached = %i"%self.iteration)
 
+		if self.need_to_restart:
+			self.restart_training_and_randomize()
+			return
+
 
 		# The training is over. Now we write all of the appropriate output 
 		# files.
@@ -536,6 +562,18 @@ class Trainer:
 			self.log.log("wrote final network potential \'%s\'"%(n_out))
 			self.log.unindent()
 
+	def restart_training_and_randomize(self):
+		self.nn.randomize_self()
+
+		self.optimizer = optim.LBFGS(
+			self.nn.getParameters(), 
+			lr=self.learning_rate, 
+			max_iter=self.max_lbfgs
+		)
+
+		self.need_to_restart = False
+		self.train()
+
 
 	# This is the loop that handles the actual training.
 	def _train_loop(self):
@@ -549,6 +587,22 @@ class Trainer:
 			progress.update(self.iteration)
 
 			self.training_losses[self.iteration] = self.last_loss
+
+			if self.restart_error != 0.0:
+				if self.last_loss > self.restart_error:
+					if self.restarts == 3:
+						if self.log is not None:
+							msg = "Maximum number of restarts exceeded."
+							self.log.log(msg)
+						break
+					else:
+						if self.log is not None:
+							msg = "Error threshold exceeded, restarting."
+							self.log.log(msg)
+						self.need_to_restart  = True
+						self.restarts        += 1
+						break
+
 
 			# The following lines figure out if we have reached an iteration 
 			# where validation information or volume vs. energy information 

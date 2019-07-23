@@ -29,5 +29,6 @@
 	"no_warn"                     : false,
 	"overwrite"                   : false,
 	"unique"                      : false,
-	"validation_split_seed"       : 0
+	"validation_split_seed"       : 0,
+	"error_restart_level"         : 0.0
 }
