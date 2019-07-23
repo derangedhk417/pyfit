@@ -184,9 +184,5 @@
 	"error_restart_level" : {
 		"type"        : "float",
 		"description" : "If this error is exceeded at any point in the training, the neural network fitting parameters will be randomized and the whole training process will be restarted. Use 0.0 to indicate that restarts should never occur. The maximum number of restarts is 3. After that, the system will shutdown."
-	},
-	"dropout" : {
-		"type"        : "float",
-		"description" : "Use a dropout layer at the start of the network with this dropout probability."
-	} 
+	}
 }

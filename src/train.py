@@ -211,7 +211,7 @@ class TorchTrainingData:
 
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
-	def __init__(self, network_potential, reduction_matrix, dropout):
+	def __init__(self, network_potential, reduction_matrix):
 		super(TorchNetwork, self).__init__()
 
 		tt = torch.float32
@@ -230,7 +230,6 @@ class TorchNetwork(nn.Module):
 		self.reduction_matrix = reduction_matrix
 		self.offset           = torch.tensor(0.5)
 		self.config           = network_potential.config
-		self.dropout          = dropout
 
 		# Create a set of linear transforms.
 		for idx in range(len(self.config.layer_sizes)):
@@ -250,11 +249,6 @@ class TorchNetwork(nn.Module):
 
 				self.layers.append(layer)
 				self.params.extend(layer.parameters())
-
-		self.dropout_layer = None
-		if self.dropout != 0.0:
-			self.dropout_layer = nn.Dropout(p=self.dropout)
-			self.forward       = self.dropout_forward
 
 	# This is just used to provide a list of parameters to the
 	# optimizer when it is initialized.
@@ -285,7 +279,7 @@ class TorchNetwork(nn.Module):
 	#       of nn.Linear internally. Probably faster.
 	# This function actually defines the operation of the Neural Network
 	# during feed forward.
-	def _inner_forward(self, x):
+	def forward(self, x):
 		# Activation mode 0 is regular sigmoid and mode 
 		# 1 is sigmoid shifted by -0.5
 		if self.activation_mode == 0:
@@ -299,12 +293,6 @@ class TorchNetwork(nn.Module):
 
 		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
-
-	def forward(self, x):
-		return self._inner_forward(x)
-
-	def dropout_forward(self, x):
-		return self._inner_forward(self.dropout_layer(x))
 
 	def to(self, device):
 		super(TorchNetwork, self).to(device)
@@ -414,8 +402,7 @@ class Trainer:
 		# the validation loss.
 		self.nn = TorchNetwork(
 			network_potential, 
-			self.dataset.train_reduction,
-			config.dropout
+			self.dataset.train_reduction
 		)
 
 		if torch.cuda.is_available() and not config.force_cpu:
