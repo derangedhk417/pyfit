@@ -17,7 +17,7 @@ cd $current_path
 module purge
 module load powerAI/pytorch-1.5.4
 source /opt/DL/pytorch/bin/pytorch-activate
-{{{command}}}
+time {{{command}}}
 
 !
 
