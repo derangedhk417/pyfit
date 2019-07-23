@@ -769,8 +769,12 @@ def ValidateArgs(args):
 			print("The learning rate value is illogical, please correct it.")
 			return 1
 
-		if args.max_lbfgs_iterations <= 0:
-			print("The max_lbfgs_iterations value is illogical.")
+		if args.learning_rate < 0.0 or args.learning_rate > 10:
+			print("The learning rate value is illogical, please correct it.")
+			return 1
+
+		if args.error_restart_level < 0.0:
+			print("The error_restart_level value is illogical.")
 			return 1
 
 		if args.validation_ratio == 1.0 and args.validation_interval != 0:

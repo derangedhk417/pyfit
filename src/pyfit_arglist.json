@@ -180,5 +180,9 @@
 	"max_lbfgs_iterations" : {
 		"type"        : "int",
 		"description" : "The maximum number of LBFGS optimization iterations per training iteration. A value of 10 is usually sufficient."
+	},
+	"error_restart_level" : {
+		"type"        : "float",
+		"description" : "If this error is exceeded at any point in the training, the neural network fitting parameters will be randomized and the whole training process will be restarted. Use 0.0 to indicate that restarts should never occur. The maximum number of restarts is 3. After that, the system will shutdown."
 	}
 }
