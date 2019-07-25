@@ -66,7 +66,7 @@ class TorchTrainingData:
 			# Sort the structures in the group by their volume.
 			sorted_group = sorted(
 				group, 
-				key=lambda x: x[0].structure_volume / x[0].structure_n_atoms
+				key=lambda x: x[0].structure_volume
 			)
 
 			if validation_ratio == 1.0:

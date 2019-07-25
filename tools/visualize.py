@@ -15,6 +15,8 @@ import torch
 import numpy             as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import fnmatch
+from   scipy import interpolate
 
 from sys import path
 path.append('src')
@@ -32,6 +34,65 @@ def format_axis(ax):
 		tick.label.set_fontsize(20) 
 	for axis in ['top','bottom','left','right']:
 		ax.spines[axis].set_linewidth(1.8)
+
+c_list = [
+	'red', 'green', 'blue', 
+	'orange', 'cyan', 'magenta', 
+	'yellow'
+]
+def volume_energy_plots(full_structures, nn_energies, filters, title):
+	full       = full_structures
+	names      = [struct[0].group_name for struct in full]
+	vol        = [struct[0].structure_volume for struct in full]
+	n_atom     = [struct[0].structure_n_atoms for struct in full]
+	energy     = [e for e in nn_energies.detach().numpy()]
+	dft_energy = [struct[0].structure_energy for struct in full]
+	combined_array = list(zip(
+		names, vol, n_atom, 
+		energy, dft_energy
+	))
+
+	# Now we split this up into a separate set of data points for
+	# each group that the user wants plotted.
+
+	sets = {}
+	for name in filters:
+		current = []
+		if '*' in name:
+			for item in combined_array:
+				if len(fnmatch.filter([item[0]], name)) != 0:
+					current.append(item)
+		else:
+			for item in combined_array:
+				if item[0] == name:
+					current.append(item)
+		sets[name] = current
+
+	# Now we actually create a series in a plot for each group.
+	fig, ax = plt.subplots(1, 1)
+	plots   = []
+	labels  = []
+	for i, k in enumerate(sets):
+		# sort by volume
+		items = sorted(sets[k], key=lambda x: x[1])
+
+		# create a volume vs. energy per atom series
+		v     = [i[1] for i in items]
+		e_nn  = [i[3] / i[2] for i in items]
+		e_dft = [i[4] / i[2] for i in items]
+
+		
+		pl0 = ax.scatter(v, e_nn, s=50, color='red', marker='1')
+		pl1 = ax.scatter(
+			v, e_dft, marker='o', edgecolors=c_list[i],
+			s=20, facecolors='none')
+
+		plots.append(pl1)
+		labels.append(k)
+	ax.legend(plots, labels)
+	format_axis(ax)
+	ax.set_title(title)
+	plt.show()
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -68,6 +129,12 @@ if __name__ == '__main__':
 	parser.add_argument(
 		'-P', '--parity', dest='parity', action='store_true',
 		help='Construct parity plots.'
+	)
+
+	parser.add_argument(
+		'-V', '--volume-vs-energy', dest='volume_v_energy', nargs='*', type=str,
+		metavar='GROUP_NAME', default=[],
+		help='Construct energy vs. volume plots for the following groups.'
 	)
 
 	args = parser.parse_args()
@@ -188,3 +255,22 @@ if __name__ == '__main__':
 		ax.set_title('validation')
 		format_axis(ax)
 		plt.show()
+
+	if args.volume_v_energy != []:
+		# For both the training set and the validation set, we need
+		# an array that pairs the per-atom volume, the per-atom energy
+		# as predicted by dft, the per-atom energy as predicted by 
+		# the nn and the name of the group.
+		volume_energy_plots(
+			dataset.full_validation_structures,
+			val_energies,
+			args.volume_v_energy,
+			'validation'
+		)
+
+		volume_energy_plots(
+			dataset.full_training_structures,
+			train_energies,
+			args.volume_v_energy,
+			'training'
+		)
