@@ -29,6 +29,7 @@
 	"no_warn"                     : false,
 	"overwrite"                   : false,
 	"unique"                      : false,
-	"validation_split_seed"       : 0,
-	"error_restart_level"         : 0.0
+	"validation_split_seed"       : 2,
+	"error_restart_level"         : 0.0,
+	"l2_regularization_prefactor" : 0.1
 }

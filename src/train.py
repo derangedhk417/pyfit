@@ -14,6 +14,8 @@ import torch.nn     as nn
 import torch.optim  as optim
 import torch.sparse as sparse
 
+import code
+
 from copy import deepcopy
 from util import ProgressBar
 
@@ -114,6 +116,8 @@ class TorchTrainingData:
 		# These two tuples are the primary result of this class.
 		training_tensors   = self._getTensors(training)
 
+		self.full_training_structures = training
+
 		self.train_energies    = training_tensors[0]
 		self.train_reciprocals = training_tensors[1]
 		self.train_lsp         = training_tensors[2]
@@ -123,6 +127,7 @@ class TorchTrainingData:
 
 		if validation_ratio != 1.0:
 			validation_tensors = self._getTensors(validation)
+			self.full_validation_structures = validation
 
 			self.val_energies    = validation_tensors[0]
 			self.val_reciprocals = validation_tensors[1]
@@ -211,7 +216,7 @@ class TorchTrainingData:
 
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
-	def __init__(self, network_potential, reduction_matrix):
+	def __init__(self, network_potential, reduction_matrix, l2):
 		super(TorchNetwork, self).__init__()
 
 		tt = torch.float32
@@ -230,6 +235,8 @@ class TorchNetwork(nn.Module):
 		self.reduction_matrix = reduction_matrix
 		self.offset           = torch.tensor(0.5)
 		self.config           = network_potential.config
+		self.l2_coefficient   = torch.tensor(l2)
+		self.device           = None
 
 		# Create a set of linear transforms.
 		for idx in range(len(self.config.layer_sizes)):
@@ -254,6 +261,13 @@ class TorchNetwork(nn.Module):
 	# optimizer when it is initialized.
 	def getParameters(self):
 		return self.params
+
+	def getL2Loss(self):
+		self.l2_loss = 0.0
+		for p in self.getParameters():
+			self.l2_loss += torch.norm(p)
+
+		return self.l2_loss * self.l2_coefficient
 
 	# This returns the weights and biases for the neural network 
 	# in the same format that they were passed in as when initializing
@@ -294,10 +308,26 @@ class TorchNetwork(nn.Module):
 		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
 
+	# Performs a feed forward, but doesn't use the reduction matrix.
+	# This will return the energy of each individual atom.
+	def atomic_forward(self, x):
+		if self.activation_mode == 0:
+			x0 = torch.sigmoid(self.layers[0](x))
+			for layer in self.layers[1:-1]:
+				x0 = torch.sigmoid(layer(x0))
+		else:
+			x0 = torch.sigmoid(self.layers[0](x)) - self.offset
+			for layer in self.layers[1:-1]:
+				x0 = torch.sigmoid(layer(x0)) - self.offset
+
+		return self.layers[-1](x0)
+
 	def to(self, device):
 		super(TorchNetwork, self).to(device)
 		self.reduction_matrix = self.reduction_matrix.to(device)
 		self.offset           = self.offset.to(device)
+		self.l2_coefficient   = self.l2_coefficient.to(device)
+		self.device           = device
 		return self
 
 	def cpu(self):
@@ -322,7 +352,6 @@ class TorchNetwork(nn.Module):
 				for node_idx in range(len(param.data)):
 					param.data[node_idx] = np.random.uniform(-0.5, 0.5)
 					
-
 # This class ties everything together and performs the actual training,
 # progress reporting and saving of the resulting files. I considered making
 # this a few functions instead of a class, but it occured to me that making
@@ -362,6 +391,7 @@ class Trainer:
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
+		self.l2              = config.l2_regularization_prefactor
 		self.restart_error   = config.error_restart_level
 		self.training_set    = training_set
 		self.potential       = network_potential
@@ -397,12 +427,16 @@ class Trainer:
 			else:
 				self.log.log("Used default seed (probabilistic behavior).")
 
+			if self.l2 != 0.0:
+				self.log.log("Using L2 Regularization Factor %f"%self.l2)
+
 		# To start, initialize the network with the training set reduction 
 		# matrix. This will get switched out temporarily when computing
 		# the validation loss.
 		self.nn = TorchNetwork(
 			network_potential, 
-			self.dataset.train_reduction
+			self.dataset.train_reduction,
+			self.l2
 		)
 
 		if torch.cuda.is_available() and not config.force_cpu:
@@ -461,7 +495,10 @@ class Trainer:
 		loss = self.loss()
 
 		# Store the loss in the array.
-		self.last_loss = loss.cpu().item()
+		self.last_loss = loss.item()
+
+		if self.l2 != 0.0:
+			loss = loss + self.nn.getL2Loss()
 
 		loss.backward()
 		return loss
@@ -567,7 +604,9 @@ class Trainer:
 			self.log.unindent()
 
 	def restart_training_and_randomize(self):
+		self.nn = self.nn.cpu()
 		self.nn.randomize_self()
+		self.nn = self.nn.to(self.device)
 
 		self.optimizer = optim.LBFGS(
 			self.nn.getParameters(), 

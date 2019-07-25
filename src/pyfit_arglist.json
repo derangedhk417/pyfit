@@ -133,6 +133,13 @@
 		"predicate"        : "run_training",
 		"description"      : "Seed the numpy rng with this number before deciding how to split the validation and training data. Useful for repeatability of results. Note: PyTorch does not guarentee determinism, so results may not be exact. Note: 0 is interpreted to mean that the system should use the default, probabilistic, seed."
 	},
+	"l2_regularization_prefactor" : {
+		"short_name"       : "-l",
+		"long_name"        : "--l2-regularization-coefficient",
+		"type"             : "float",
+		"predicate"        : "run_training",
+		"description"      : "The factor to multiply the L2 weight normalization by before adding it to the loss. If this is 0.0, no L2 weight regularization is applied. L2 loss is not included in the loss log."
+	},
 	"log_path" : {
 		"type"        : "string",
 		"description" : "The path to the file to put logs into."

@@ -782,6 +782,10 @@ def ValidateArgs(args):
 			print(msg)
 			return 1
 
+		if args.l2_regularization_prefactor < 0.0:
+			print("The l2_regularization_prefactor value is illogical.")
+			return 1
+
 	return 0, log
 
 
