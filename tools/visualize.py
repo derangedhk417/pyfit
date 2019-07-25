@@ -23,6 +23,26 @@ path.append('src')
 from potential    import NetworkPotential
 from training_set import TrainingSet
 from train        import TorchTrainingData, TorchNetwork
+from lsp          import computeParameters
+
+def xyz_to_img(x, y, z, size):
+
+	sigmax = (x_rng[-1] - x_rng[0])*sigmax
+	sigmay = (y_rng[-1] - y_rng[0])*sigmay
+
+	x = np.array(x)
+	y = np.array(y)
+	z = np.array(z)
+
+	grid = np.zeros((size, size))
+
+	for yidx, yi in enumerate(y.shape[0]):
+		for xidx, xi in enumerate(x.shape[0]):
+			weights  = (1 / (2*np.pi*sigmax*sigmay))*np.exp(-(((x - xi)**2 / (2*sigmax**2)) + ((y - yi)**2 / (2*sigmay**2))))
+			mean_val = np.average(z, weights=weights)
+			grid[yidx][xidx] = mean_val
+
+	return grid
 
 def format_axis(ax):
 	ax.xaxis.set_tick_params(width=2)
@@ -137,6 +157,12 @@ if __name__ == '__main__':
 		help='Construct energy vs. volume plots for the following groups.'
 	)
 
+	parser.add_argument(
+		'-T', '--trimer-energy', dest='trimer_energy', type=float, default=0.0,
+		help='Construct a heatmap of the energy of an atom as a function of ' +
+		'position relative to a dimer with this separation.'
+	)
+
 	args = parser.parse_args()
 
 	# Load the training set and neural network.
@@ -236,7 +262,7 @@ if __name__ == '__main__':
 
 		ax.scatter(
 			dataset.train_energies, train_energies.detach().numpy(),
-			s=4, zorder=1000000
+			s=10, zorder=1000000
 		)
 		ax.set_title('training')
 		format_axis(ax)
@@ -250,7 +276,7 @@ if __name__ == '__main__':
 		ax.plot(line_rng, line_rng, color='magenta')
 		ax.scatter(
 			dataset.val_energies, val_energies.detach().numpy(),
-			s=4, zorder=1000000
+			s=10, zorder=1000000
 		)
 		ax.set_title('validation')
 		format_axis(ax)
@@ -274,3 +300,39 @@ if __name__ == '__main__':
 			args.volume_v_energy,
 			'training'
 		)
+
+	if args.trimer_energy != 0.0:
+		# The two fixed atom coordinates
+		vecs = np.array([
+			[-args.trimer_energy / 2, 0.0, 0.0],
+			[ args.trimer_energy / 2, 0.0, 0.0]
+		])
+
+		# Keep the third atom in the same plane as the fixed atoms
+		# and sweep an 8x8 angrstroem box around them.
+		res  = 64
+		grid = np.zeros((res, res))
+
+		fig, ax = plt.subplots(1, 1)
+		for xi, x in enumerate(np.linspace(-4, 4, res)):
+			for yi, y in enumerate(np.linspace(-4, 4, res)):
+				lsps = computeParameters(
+					vecs - np.array([x, y, 0.0]),
+					potential.config
+				)
+				lsps = torch.tensor([lsps], dtype=torch.float32)
+				e    = nn.atomic_forward(lsps)[0].item()
+				grid[yi][xi] = e
+
+		plot   = ax.imshow(grid, cmap='inferno', interpolation='bicubic')
+		atom_x = np.array([-args.trimer_energy / 2, args.trimer_energy / 2])
+		atom_y = np.array([0, 0])
+
+		atom_x = ((atom_x - (-4)) / 8) * res
+		atom_y = ((atom_y - (-4)) / 8) * res
+		sc   = ax.scatter(
+			atom_x, atom_y, s=50, marker='H', 
+			facecolors='none', edgecolors='cyan'
+		)
+		fig.colorbar(plot)
+		plt.show()
