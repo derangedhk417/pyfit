@@ -306,16 +306,19 @@ if __name__ == '__main__':
 		vecs = np.array([
 			[-args.trimer_energy / 2, 0.0, 0.0],
 			[ args.trimer_energy / 2, 0.0, 0.0]
+			#[ 0.0, -args.trimer_energy / 2, 0.0],
+			#[ 0.0,  args.trimer_energy / 2, 0.0],
 		])
 
 		# Keep the third atom in the same plane as the fixed atoms
 		# and sweep an 8x8 angrstroem box around them.
-		res  = 64
+		res   = 256
+		width = 12.0
 		grid = np.zeros((res, res))
 
 		fig, ax = plt.subplots(1, 1)
-		for xi, x in enumerate(np.linspace(-4, 4, res)):
-			for yi, y in enumerate(np.linspace(-4, 4, res)):
+		for xi, x in enumerate(np.linspace(-(width / 2), (width / 2), res)):
+			for yi, y in enumerate(np.linspace(-(width / 2), (width / 2), res)):
 				lsps = computeParameters(
 					vecs - np.array([x, y, 0.0]),
 					potential.config
@@ -325,11 +328,17 @@ if __name__ == '__main__':
 				grid[yi][xi] = e
 
 		plot   = ax.imshow(grid, cmap='inferno', interpolation='bicubic')
-		atom_x = np.array([-args.trimer_energy / 2, args.trimer_energy / 2])
-		atom_y = np.array([0, 0])
+		atom_x = np.array([i[0] for i in vecs])
+		atom_y = np.array([i[1] for i in vecs])
 
-		atom_x = ((atom_x - (-4)) / 8) * res
-		atom_y = ((atom_y - (-4)) / 8) * res
+		atom_x  = ((atom_x - (-(width / 2))) / width) * res
+		atom_y  = ((atom_y - (-(width / 2))) / width) * res
+		r       = (1.5 / width) * res
+		
+		for x, y in zip(atom_x, atom_y):
+			c = plt.Circle((x, y), radius=r, ec='red', fc='none')
+			ax.add_artist(c)
+
 		sc   = ax.scatter(
 			atom_x, atom_y, s=50, marker='H', 
 			facecolors='none', edgecolors='cyan'
