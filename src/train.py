@@ -324,7 +324,8 @@ class TorchNetwork(nn.Module):
 
 	def to(self, device):
 		super(TorchNetwork, self).to(device)
-		self.reduction_matrix = self.reduction_matrix.to(device)
+		if self.reduction_matrix is not None:
+			self.reduction_matrix = self.reduction_matrix.to(device)
 		self.offset           = self.offset.to(device)
 		self.l2_coefficient   = self.l2_coefficient.to(device)
 		self.device           = device
