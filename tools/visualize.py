@@ -157,12 +157,6 @@ if __name__ == '__main__':
 		help='Construct energy vs. volume plots for the following groups.'
 	)
 
-	parser.add_argument(
-		'-T', '--trimer-energy', dest='trimer_energy', type=float, default=0.0,
-		help='Construct a heatmap of the energy of an atom as a function of ' +
-		'position relative to a dimer with this separation.'
-	)
-
 	args = parser.parse_args()
 
 	# Load the training set and neural network.
@@ -300,48 +294,3 @@ if __name__ == '__main__':
 			args.volume_v_energy,
 			'training'
 		)
-
-	if args.trimer_energy != 0.0:
-		# The two fixed atom coordinates
-		vecs = np.array([
-			[-args.trimer_energy / 2, 0.0, 0.0],
-			[ args.trimer_energy / 2, 0.0, 0.0]
-			#[ 0.0, -args.trimer_energy / 2, 0.0],
-			#[ 0.0,  args.trimer_energy / 2, 0.0],
-		])
-
-		# Keep the third atom in the same plane as the fixed atoms
-		# and sweep an 8x8 angrstroem box around them.
-		res   = 256
-		width = 12.0
-		grid = np.zeros((res, res))
-
-		fig, ax = plt.subplots(1, 1)
-		for xi, x in enumerate(np.linspace(-(width / 2), (width / 2), res)):
-			for yi, y in enumerate(np.linspace(-(width / 2), (width / 2), res)):
-				lsps = computeParameters(
-					vecs - np.array([x, y, 0.0]),
-					potential.config
-				)
-				lsps = torch.tensor([lsps], dtype=torch.float32)
-				e    = nn.atomic_forward(lsps)[0].item()
-				grid[yi][xi] = e
-
-		plot   = ax.imshow(grid, cmap='inferno', interpolation='bicubic')
-		atom_x = np.array([i[0] for i in vecs])
-		atom_y = np.array([i[1] for i in vecs])
-
-		atom_x  = ((atom_x - (-(width / 2))) / width) * res
-		atom_y  = ((atom_y - (-(width / 2))) / width) * res
-		r       = (1.5 / width) * res
-		
-		for x, y in zip(atom_x, atom_y):
-			c = plt.Circle((x, y), radius=r, ec='red', fc='none')
-			ax.add_artist(c)
-
-		sc   = ax.scatter(
-			atom_x, atom_y, s=50, marker='H', 
-			facecolors='none', edgecolors='cyan'
-		)
-		fig.colorbar(plot)
-		plt.show()
