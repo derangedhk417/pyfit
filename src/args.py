@@ -473,7 +473,7 @@ def ValidateArgs(args):
 
 
 	log = Log(args.log_path)
-
+	
 	# ==============================
 	# Logging
 	# ==============================
@@ -483,7 +483,6 @@ def ValidateArgs(args):
 	# Log the configuration file for this run.
 	del args.as_dictionary['as_dictionary']
 	arg_dict = args.as_dictionary
-
 	max_len = max([len(k) for k in arg_dict])
 	log.log('='*10 + ' Run Configuration ' + 10*'=')
 	log.indent()
