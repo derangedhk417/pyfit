@@ -33,6 +33,8 @@ class Log:
 				if len(current_line) + len(words[idx]) + 1 < self.max_col:
 					current_line += words[idx] + ' '
 					idx          += 1
+				else:
+					break
 
 			lines.append(current_line)
 
