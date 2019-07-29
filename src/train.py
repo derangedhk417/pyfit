@@ -595,8 +595,9 @@ class Trainer:
 				self.log.log("wrote energy log \'%s\'"%(self.energy_file))
 
 		# Write the final neural network file.
-		layers = self.nn.cpu().getNetworkValues()
-		self.potential.layers = layers
+		if self.iterations != 0:
+			layers = self.nn.cpu().getNetworkValues()
+			self.potential.layers = layers
 		self.potential.writeNetwork(self.network_out)
 
 		if self.log is not None:
