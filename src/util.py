@@ -14,7 +14,7 @@ class Log:
 	def __init__(self, file_name, max_col=80, tab_size=4):
 		self.file     = open(file_name, 'w', 1024*10)
 		self.max_col  = max_col
-		self._indent   = 0
+		self._indent  = 0
 		self.tab_size = 4
 
 		log_instances.append(self)
@@ -33,6 +33,8 @@ class Log:
 				if len(current_line) + len(words[idx]) + 1 < self.max_col:
 					current_line += words[idx] + ' '
 					idx          += 1
+				else:
+					break
 
 			lines.append(current_line)
 

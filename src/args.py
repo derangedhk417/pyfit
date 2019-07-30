@@ -431,6 +431,16 @@ def ValidateArgs(args):
 	else:
 		args.log_path = 'pyfit_log.%s.txt'%time_str
 
+	if args.nvidia_smi_log != '':
+		try:
+			with open(args.nvidia_smi_log, 'w') as file:
+				file.write('test')
+
+			os.remove(args.nvidia_smi_log)
+		except:
+			print("The nvidia-smi log file does not appear to be writable.")
+			return 1
+
 	if args.unique:
 		# We need to modify all of the output file names to contain the date
 		# & time string.
@@ -473,7 +483,7 @@ def ValidateArgs(args):
 
 
 	log = Log(args.log_path)
-
+	
 	# ==============================
 	# Logging
 	# ==============================
@@ -483,7 +493,6 @@ def ValidateArgs(args):
 	# Log the configuration file for this run.
 	del args.as_dictionary['as_dictionary']
 	arg_dict = args.as_dictionary
-
 	max_len = max([len(k) for k in arg_dict])
 	log.log('='*10 + ' Run Configuration ' + 10*'=')
 	log.indent()

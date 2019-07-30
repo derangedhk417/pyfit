@@ -9,10 +9,12 @@
 
 import numpy        as np
 import os
+import subprocess
 import torch
 import torch.nn     as nn
 import torch.optim  as optim
 import torch.sparse as sparse
+
 
 import code
 
@@ -392,6 +394,7 @@ class Trainer:
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
+		self.smi_log         = config.nvidia_smi_log
 		self.l2              = config.l2_regularization_prefactor
 		self.restart_error   = config.error_restart_level
 		self.training_set    = training_set
@@ -527,6 +530,23 @@ class Trainer:
 			self.reciprocals = self.dataset.train_reciprocals
 			self.reciprocals = self.reciprocals.cpu().numpy().transpose()[0]
 
+		if self.smi_log != '':
+			# See if nvidia-smi is even present on this machine.
+			try:
+				text = subprocess.getoutput('which nvidia-smi')
+				if text.isspace() or text == '':
+					self.smi_log = ''
+				else:
+					self.smi_outputs = []
+			except:
+				self.smi_log = ''
+
+			msg = "Determined that nvidia-smi is not present on this machine."
+			if self.smi_log == '':
+				if self.log is not None:
+					self.log.log(msg)
+			
+
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
 
@@ -594,9 +614,19 @@ class Trainer:
 			if self.log is not None:
 				self.log.log("wrote energy log \'%s\'"%(self.energy_file))
 
+		if self.smi_log != '':
+			with open(self.smi_log, 'w') as file:
+				for stdout in self.smi_outputs:
+					file.write(('-' * 20) + 'output' + ('-' * 20) + '\n\n')
+					file.write(stdout)
+
+			if self.log is not None:
+				self.log.log("wrote nvidia-smi log \'%s\'"%(self.smi_log))
+
 		# Write the final neural network file.
-		layers = self.nn.cpu().getNetworkValues()
-		self.potential.layers = layers
+		if self.iterations != 0:
+			layers = self.nn.cpu().getNetworkValues()
+			self.potential.layers = layers
 		self.potential.writeNetwork(self.network_out)
 
 		if self.log is not None:
@@ -668,6 +698,14 @@ class Trainer:
 					layers = self.nn.getNetworkValues()
 					self.potential.layers = layers
 					self.potential.writeNetwork(path)
+
+			if self.smi_log != '':
+				if self.iteration % 50 == 0:
+					try:
+						smi_stdout = subprocess.getoutput("nvidia-smi")
+						self.smi_outputs.append(smi_stdout)
+					except:
+						self.smi_outputs.append("nvidia-smi call failed")
 			
 			# Perform an evaluate and correct step, while storing
 			# the resulting loss in self.training_losses.

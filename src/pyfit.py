@@ -18,6 +18,7 @@ from neighbor     import GenerateNeighborList
 from lsp          import GenerateLocalStructureParams
 from train        import Trainer
 
+
 def RunPyfit(config):
 	# Try to ensure that all of the configuration settings make sense. If the 
 	# run is doomed to fail we want to catch is now and not when the job has 
@@ -40,6 +41,7 @@ def RunPyfit(config):
 
 	potential    = None
 	training_set = None
+
 
 	if config.generate_training_set:
 		poscar_data = PoscarLoader(config.e_shift, log=log)
@@ -107,7 +109,6 @@ if __name__ == '__main__':
 	# Parse the arguments. And construct a configuration structure that can be
 	# passed around to the functions in the program.
 	config = ParseArgs(sys.argv)
-
 	# The program is structured this way so that a script that automates a run 
 	# of pyfit can do so programmatically in a very straightforward manner. A
 	# user could have code like the following, if they wanted to automate 
