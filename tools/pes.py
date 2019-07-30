@@ -19,7 +19,7 @@ import fnmatch
 from   scipy import interpolate
 
 from sys import path
-path.append('src')
+path.append(sys.path[0] + '/../src')
 from potential    import NetworkPotential
 from training_set import TrainingSet
 from train        import TorchTrainingData, TorchNetwork

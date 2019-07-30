@@ -191,5 +191,9 @@
 	"error_restart_level" : {
 		"type"        : "float",
 		"description" : "If this error is exceeded at any point in the training, the neural network fitting parameters will be randomized and the whole training process will be restarted. Use 0.0 to indicate that restarts should never occur. The maximum number of restarts is 3. After that, the system will shutdown."
+	},
+	"nvidia_smi_log" : {
+		"type"        : "str",
+		"description" : "The file to log the output of the nvidia-smi command into. If this is blank, it will not be logged. If specified, the output will be logged every 50 iterations."
 	}
 }

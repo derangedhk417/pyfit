@@ -19,7 +19,7 @@ import fnmatch
 from   scipy import interpolate
 
 from sys import path
-path.append('src')
+path.append(sys.path[0] + '/../src')
 from potential    import NetworkPotential
 from training_set import TrainingSet
 from train        import TorchTrainingData, TorchNetwork
@@ -56,9 +56,9 @@ def format_axis(ax):
 		ax.spines[axis].set_linewidth(1.8)
 
 c_list = [
-	'red', 'green', 'blue', 
-	'orange', 'cyan', 'magenta', 
-	'yellow'
+	'green', 'cyan', 'blue', 
+	'orange', 'yellow',
+	'magenta'
 ]
 def volume_energy_plots(full_structures, nn_energies, filters, title):
 	full       = full_structures
