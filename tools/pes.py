@@ -84,11 +84,6 @@ def get_args():
 	)
 
 	parser.add_argument(
-		'-z', '--z-coordinate', dest='z_coordinate', type=float, default=0.0,
-		help='The z-coordinate to use for the rendering.'
-	)
-
-	parser.add_argument(
 		'--draw-atoms', dest='draw_atoms', action='store_true',
 		help='Draw a marker for each atom location.'
 	)
@@ -119,12 +114,12 @@ def get_args():
 	)
 
 	parser.add_argument(
-		'--e-min', dest='e_min', type=float, default=-5.0,
+		'--e-min', dest='e_min', type=float, default=0.0,
 		help='Minimum energy for sweep rendering.'
 	)
 
 	parser.add_argument(
-		'--e-max', dest='e_max', type=float, default=-1.0,
+		'--e-max', dest='e_max', type=float, default=0.0,
 		help='Maximum energy for sweep rendering.'
 	)
 
@@ -132,6 +127,32 @@ def get_args():
 		'--image-dpi', dest='image_dpi', type=int, default=150,
 		help='Final image dpi.'
 	)
+
+	parser.add_argument(
+		'--span-dir', dest='span_dir', type=str, default='',
+		help='dfsadsgfdgfd'
+	)
+
+	parser.add_argument(
+		'--auto-center', dest='auto_center', action='store_true',
+		help='Center the rendering on the geometric center of the structure.'
+	)
+
+	parser.add_argument(
+		'-x', dest='x', type=float, default=0.0,
+		help='x coordinate of the center of the rendering.'
+	)
+
+	parser.add_argument(
+		'-y', dest='y', type=float, default=0.0,
+		help='y coordinate of the center of the rendering.'
+	)
+
+	parser.add_argument(
+		'-z', dest='z', type=float, default=0.0,
+		help='z coordinate of the center of the rendering.'
+	)
+
 
 	parser.add_argument(
 		'-c', '--colormap', dest='colormap', type=str, default='RdYlGn',
@@ -248,8 +269,10 @@ def render_heatmap(structure, potential, nn, res, width, z, args, save=None):
 	atoms = structure.atoms
 
 	idx = 0
-	for xi, x in enumerate(np.linspace(-(width / 2), (width / 2), res)):
-		for yi, y in enumerate(np.linspace(-(width / 2), (width / 2), res)):
+	x_space = np.linspace(args.x - (width / 2), args.x + (width / 2), res)
+	y_space = np.linspace(args.y - (width / 2), args.y + (width / 2), res)
+	for xi, x in enumerate(x_space):
+		for yi, y in enumerate(y_space):
 			probe_locations[idx, :] = [
 				x, y, z
 			]
@@ -295,19 +318,26 @@ def render_heatmap(structure, potential, nn, res, width, z, args, save=None):
 
 	fig, ax = plt.subplots(1, 1)
 
-	plot = ax.imshow(
-		grid, 
-		cmap=args.colormap, 
-		interpolation='bicubic',
-		vmin=args.e_min,
-		vmax=args.e_max
-	)
+	if args.e_min == 0.0 and args.e_max == 0.0:
+		plot = ax.imshow(
+			grid, 
+			cmap=args.colormap, 
+			interpolation='bicubic'
+		)
+	else:
+		plot = ax.imshow(
+			grid, 
+			cmap=args.colormap, 
+			interpolation='bicubic',
+			vmin=args.e_min,
+			vmax=args.e_max
+		)
 	if args.draw_atoms:
 		atom_x = np.array([i[0] for i in atoms])
 		atom_y = np.array([i[1] for i in atoms])
 
-		atom_x  = ((atom_x - (-(width / 2))) / width) * res
-		atom_y  = ((atom_y - (-(width / 2))) / width) * res
+		atom_x  = ((atom_x - (-(width / 2)) - args.x) / width) * res
+		atom_y  = ((atom_y - (-(width / 2)) - args.y) / width) * res
 		r       = (args.radius / width) * res
 	
 		if args.radius != 0.0:
@@ -317,7 +347,7 @@ def render_heatmap(structure, potential, nn, res, width, z, args, save=None):
 
 		sc = ax.scatter(
 			atom_x, atom_y, s=50, marker='H', 
-			facecolors='none', edgecolors='cyan'
+			facecolors='red', edgecolors='cyan'
 		)
 	fig.colorbar(plot)
 
@@ -326,6 +356,8 @@ def render_heatmap(structure, potential, nn, res, width, z, args, save=None):
 		plt.savefig(save, dpi=args.image_dpi)
 		plt.close(fig)
 	else:
+		fig.set_dpi(args.image_dpi)
+		code.interact(local=locals())
 		plt.show()
 
 if __name__ == '__main__':
@@ -364,6 +396,27 @@ if __name__ == '__main__':
 	res   = args.resolution
 	width = args.width
 
+	if args.auto_center:
+		# We need to set args.x, args.y and args.z
+		# to the geometric center of the structure.
+		x_center = structure.atoms[:, 0].mean()
+		y_center = structure.atoms[:, 1].mean()
+		z_center = structure.atoms[:, 2].mean()
+
+
+		args.x = x_center
+		args.y = y_center
+
+		args.z = z_center
+		if args.span_dir != '':
+			args.z = z_center
+		elif args.sweep_dir != '':
+			delta = args.z_max - args.z_min
+			args.z_min = z_center - (delta / 2)
+			args.z_max = args.z_min + delta
+		
+
+
 	if args.sweep_dir != '':
 		if not os.path.isdir(args.sweep_dir):
 			os.mkdir(args.sweep_dir)
@@ -401,6 +454,6 @@ if __name__ == '__main__':
 			nn,
 			res,
 			width,
-			args.z_coordinate,
+			args.z,
 			args
 		)
