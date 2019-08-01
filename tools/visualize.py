@@ -101,7 +101,34 @@ def volume_energy_plots(full_structures, nn_energies, filters, title):
 		e_nn  = [i[3] / i[2] for i in items]
 		e_dft = [i[4] / i[2] for i in items]
 
+		# code.interact(local=locals())
+
+		# Calculate the first derivative of both the DFT and
+		# nn data.
+		x_nn, y_nn = d1(v, [e[0] for e in e_nn])
+		xdft, ydft = d1(v, e_dft)
+
+		x_nn2, y_nn2 = d1(x_nn, y_nn)
+		xdft2, ydft2 = d1(xdft, ydft)
+
+		e_d1 = np.abs(np.array(ydft) - np.array(y_nn)).mean()
+		e_d2 = np.abs(np.array(ydft2) - np.array(y_nn2)).mean()
+		e    = np.abs(np.array([e[0] for e in e_nn]) - np.array(e_dft)).mean()
+
+		print("d2 error: %f"%e_d2)
+		print("d1 error: %f"%e_d1)
+		print("d0 error: %f"%e)
 		
+		pl = ax.scatter(x_nn, y_nn, s=50, color='red', marker='1')
+		pl = ax.scatter(
+			xdft, ydft, marker='o', edgecolors=c_list[i],
+			s=20, facecolors='none')
+
+		pl = ax.scatter(x_nn2, y_nn2, s=50, color='red', marker='1')
+		pl = ax.scatter(
+			xdft2, ydft2, marker='o', edgecolors=c_list[i],
+			s=20, facecolors='none')
+
 		pl0 = ax.scatter(v, e_nn, s=50, color='red', marker='1')
 		pl1 = ax.scatter(
 			v, e_dft, marker='o', edgecolors=c_list[i],
@@ -113,6 +140,18 @@ def volume_energy_plots(full_structures, nn_energies, filters, title):
 	format_axis(ax)
 	ax.set_title(title)
 	plt.show()
+
+def d1(x, y):
+	x_d = []
+	y_d = []
+
+	for xi in range(len(x) - 1):
+		location = x[xi] + ((x[xi + 1] - x[xi]) / 2)
+		dy       = (y[xi + 1] - y[xi]) / (x[xi + 1] - x[xi])
+		x_d.append(location)
+		y_d.append(dy)
+
+	return x_d, y_d
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -163,10 +202,6 @@ if __name__ == '__main__':
 	training_set = TrainingSet().loadFromFile(args.training_file)
 	potential    = NetworkPotential().loadFromFile(args.network_file)
 
-	# Make sure they actually match up.
-	if potential.config != training_set.config:
-		print("Training set and Potential configurations do not match.")
-		exit(1)
 
 	# Split the training data into training and validation sets.
 	dataset = TorchTrainingData(

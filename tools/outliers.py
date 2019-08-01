@@ -109,6 +109,8 @@ if __name__ == '__main__':
 		args.seed
 	)
 
+
+
 	# Construct a neural network that is ready to be evaluated for each
 	# potential.
 	for potential in all_potentials:
@@ -117,15 +119,17 @@ if __name__ == '__main__':
 			dataset.train_reduction,
 			0.0
 		)
+		if args.use_val:
+			nn.setReductionMatrix(dataset.val_reduction)
 		all_networks.append(nn)
 
 	# Depending on what the user requested, get the error in either 
 	# the training or validation data. 
-	train_energies = nn(dataset.train_lsp)
 
 	correct_energies = None
 	reciprocals      = None
 	lsps             = None
+	volumes          = None
 	all_structures   = None
 
 
@@ -133,11 +137,13 @@ if __name__ == '__main__':
 		correct_energies = dataset.val_energies
 		reciprocals      = dataset.val_reciprocals
 		lsps             = dataset.val_lsp
+		volumes          = dataset.val_volumes
 		all_structures   = dataset.full_validation_structures
 	else:
 		correct_energies = dataset.train_energies
 		reciprocals      = dataset.train_reciprocals
 		lsps             = dataset.train_lsp
+		volumes          = dataset.train_volumes
 		all_structures   = dataset.full_training_structures
 	
 	all_errors = []
@@ -160,6 +166,9 @@ if __name__ == '__main__':
 
 	all_ids    = np.array(all_ids)
 	all_groups = np.array(all_groups)
+	volumes    = np.array(volumes)
+	n_atoms    = 1 / reciprocals.detach().numpy().T[0]
+	energies   = np.array(correct_energies.detach().numpy().T[0] / n_atoms)
 
 	# We now have all of the necessary information loaded into
 	# structures sufficient to make a comparison. We need to prepare
@@ -168,9 +177,7 @@ if __name__ == '__main__':
 
 	masks = []
 	for error in all_errors:
-		masks.append((np.abs(np.array(error)) > args.error_threshold))
-		# code.interact(local=locals())
-		# exit(1)
+		masks.append(((np.abs(np.array(error)) > args.error_threshold) & (np.abs(np.array(error)) < 2.0)))
 
 	# We now have a list of boolean masks that can select the worst
 	# values from each array. The next step is to select the worst
@@ -182,17 +189,22 @@ if __name__ == '__main__':
 	fl_errors = []
 	fl_ids    = []
 	fl_groups = []
+	fl_vols   = []
+	fl_energy = []
+	fl_natom  = []
 	for err, mask in zip(all_errors, masks):
 		fl_errors.append(np.array(err)[mask].tolist())
 		fl_ids.append(all_ids[mask].tolist())
 		fl_groups.append(all_groups[mask].tolist())
+		fl_vols.append(volumes[mask].tolist())
+		fl_energy.append(energies[mask].tolist())
+		fl_natom.append(n_atoms[mask].tolist())
 
 	worst_by_group = {}
 	worst_by_id    = {}
 
-	for err, _id, group in zip(fl_errors, fl_ids, fl_groups):
-		for in_err, in_id, in_group in zip(err, _id, group):
-			#code.interact(local=locals())
+	for i, (err, _id, group) in enumerate(zip(fl_errors, fl_ids, fl_groups)):
+		for j, (in_err, in_id, in_group) in enumerate(zip(err, _id, group)):
 			if in_group not in worst_by_group:
 				worst_by_group[in_group] = [1, in_err]
 			else:
@@ -201,7 +213,11 @@ if __name__ == '__main__':
 
 
 			if in_id not in worst_by_id:
-				worst_by_id[in_id] = [1, in_err]
+				worst_by_id[in_id] = [
+					1, in_err, in_group,
+					fl_vols[i][j], fl_energy[i][j], 
+					fl_natom[i][j]
+				]
 			else:
 				worst_by_id[in_id][0] += 1
 				worst_by_id[in_id][1] += in_err
@@ -227,8 +243,9 @@ if __name__ == '__main__':
 	for k in worst_by_id:
 		count = worst_by_id[k][0]
 		avg   = worst_by_id[k][1] / count
+		
 
-		tmp.append([k, count, avg])
+		tmp.append([k, count, avg, *worst_by_id[k][2:]])
 
 	if args.sort_by_error:
 		worst_by_id = sorted(tmp, key=lambda x: x[2])
@@ -239,10 +256,10 @@ if __name__ == '__main__':
 	# that is also fairly machine readable.
 
 	print("By Structure ID: ")
-	print("%15s %15s %15s"%('id', 'mean error', 'count'))
+	print("%10s %10s %10s %10s %10s %10s %10s"%('id', 'mean error', 'count', 'vol', 'e_dft', 'n atom', 'group'))
 
 	for w in worst_by_id:
-		print("%15i %15.5f %15i"%(w[0], w[2], w[1]))
+		print("%10i %10.5f %10i %10.5f %10.5f %10i %10s"%(w[0], w[2], w[1], w[4], w[5], int(w[6]), w[3]))
 
 	print('\n\n')
 	print("By Group Name: ")
