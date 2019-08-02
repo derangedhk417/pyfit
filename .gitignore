@@ -2,4 +2,7 @@
 *.nogit.*
 test/input/*
 test/ref/*
+test/nn/k-fold-good-candidate-01.nn.dat
 clean.sh
+*-VIDEO-*
+set.txt

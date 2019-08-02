@@ -7,11 +7,16 @@
 # function that trains the neural network, which includes functionality for
 # dumping error information during the training.
 
-import numpy       as np
+import numpy        as np
 import os
+import subprocess
 import torch
-import torch.nn    as nn
-import torch.optim as optim
+import torch.nn     as nn
+import torch.optim  as optim
+import torch.sparse as sparse
+
+
+import code
 
 from copy import deepcopy
 from util import ProgressBar
@@ -63,7 +68,7 @@ class TorchTrainingData:
 			# Sort the structures in the group by their volume.
 			sorted_group = sorted(
 				group, 
-				key=lambda x: x[0].structure_volume / x[0].structure_n_atoms
+				key=lambda x: x[0].structure_volume
 			)
 
 			if validation_ratio == 1.0:
@@ -113,6 +118,8 @@ class TorchTrainingData:
 		# These two tuples are the primary result of this class.
 		training_tensors   = self._getTensors(training)
 
+		self.full_training_structures = training
+
 		self.train_energies    = training_tensors[0]
 		self.train_reciprocals = training_tensors[1]
 		self.train_lsp         = training_tensors[2]
@@ -122,6 +129,7 @@ class TorchTrainingData:
 
 		if validation_ratio != 1.0:
 			validation_tensors = self._getTensors(validation)
+			self.full_validation_structures = validation
 
 			self.val_energies    = validation_tensors[0]
 			self.val_reciprocals = validation_tensors[1]
@@ -210,7 +218,7 @@ class TorchTrainingData:
 
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
-	def __init__(self, network_potential, reduction_matrix):
+	def __init__(self, network_potential, reduction_matrix, l2):
 		super(TorchNetwork, self).__init__()
 
 		tt = torch.float32
@@ -229,6 +237,8 @@ class TorchNetwork(nn.Module):
 		self.reduction_matrix = reduction_matrix
 		self.offset           = torch.tensor(0.5)
 		self.config           = network_potential.config
+		self.l2_coefficient   = torch.tensor(l2)
+		self.device           = None
 
 		# Create a set of linear transforms.
 		for idx in range(len(self.config.layer_sizes)):
@@ -238,9 +248,9 @@ class TorchNetwork(nn.Module):
 				layer           = nn.Linear(prev_layer_size, curr_layer_size)
 				current_layer   = network_potential.layers[idx - 1]
 				with torch.no_grad():
-					tmp_weight_tensor = [node[0] for node in current_layer]
-					tmp_weight_tensor = torch.tensor(tmp_weight_tensor, dtype=tt)
-					layer.weight.copy_(tmp_weight_tensor)
+					t_weight_tensor = [node[0] for node in current_layer]
+					t_weight_tensor = torch.tensor(t_weight_tensor, dtype=tt)
+					layer.weight.copy_(t_weight_tensor)
 
 					tmp_bias_tensor = [node[1] for node in current_layer]
 					tmp_bias_tensor = torch.tensor(tmp_bias_tensor, dtype=tt)
@@ -253,6 +263,13 @@ class TorchNetwork(nn.Module):
 	# optimizer when it is initialized.
 	def getParameters(self):
 		return self.params
+
+	def getL2Loss(self):
+		self.l2_loss = 0.0
+		for p in self.getParameters():
+			self.l2_loss += torch.norm(p)
+
+		return self.l2_loss * self.l2_coefficient
 
 	# This returns the weights and biases for the neural network 
 	# in the same format that they were passed in as when initializing
@@ -293,10 +310,27 @@ class TorchNetwork(nn.Module):
 		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
 
+	# Performs a feed forward, but doesn't use the reduction matrix.
+	# This will return the energy of each individual atom.
+	def atomic_forward(self, x):
+		if self.activation_mode == 0:
+			x0 = torch.sigmoid(self.layers[0](x))
+			for layer in self.layers[1:-1]:
+				x0 = torch.sigmoid(layer(x0))
+		else:
+			x0 = torch.sigmoid(self.layers[0](x)) - self.offset
+			for layer in self.layers[1:-1]:
+				x0 = torch.sigmoid(layer(x0)) - self.offset
+
+		return self.layers[-1](x0)
+
 	def to(self, device):
 		super(TorchNetwork, self).to(device)
-		self.reduction_matrix = self.reduction_matrix.to(device)
+		if self.reduction_matrix is not None:
+			self.reduction_matrix = self.reduction_matrix.to(device)
 		self.offset           = self.offset.to(device)
+		self.l2_coefficient   = self.l2_coefficient.to(device)
+		self.device           = device
 		return self
 
 	def cpu(self):
@@ -321,7 +355,6 @@ class TorchNetwork(nn.Module):
 				for node_idx in range(len(param.data)):
 					param.data[node_idx] = np.random.uniform(-0.5, 0.5)
 					
-
 # This class ties everything together and performs the actual training,
 # progress reporting and saving of the resulting files. I considered making
 # this a few functions instead of a class, but it occured to me that making
@@ -361,6 +394,8 @@ class Trainer:
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
+		self.smi_log         = config.nvidia_smi_log
+		self.l2              = config.l2_regularization_prefactor
 		self.restart_error   = config.error_restart_level
 		self.training_set    = training_set
 		self.potential       = network_potential
@@ -396,10 +431,17 @@ class Trainer:
 			else:
 				self.log.log("Used default seed (probabilistic behavior).")
 
+			if self.l2 != 0.0:
+				self.log.log("Using L2 Regularization Factor %f"%self.l2)
+
 		# To start, initialize the network with the training set reduction 
 		# matrix. This will get switched out temporarily when computing
 		# the validation loss.
-		self.nn = TorchNetwork(network_potential, self.dataset.train_reduction)
+		self.nn = TorchNetwork(
+			network_potential, 
+			self.dataset.train_reduction,
+			self.l2
+		)
 
 		if torch.cuda.is_available() and not config.force_cpu:
 			self.device = torch.device("cuda:%i"%config.gpu_affinity)
@@ -457,7 +499,10 @@ class Trainer:
 		loss = self.loss()
 
 		# Store the loss in the array.
-		self.last_loss = loss.cpu().item()
+		self.last_loss = loss.item()
+
+		if self.l2 != 0.0:
+			loss = loss + self.nn.getL2Loss()
 
 		loss.backward()
 		return loss
@@ -484,6 +529,23 @@ class Trainer:
 			self.energies = np.zeros((energy_saves, n_structures))
 			self.reciprocals = self.dataset.train_reciprocals
 			self.reciprocals = self.reciprocals.cpu().numpy().transpose()[0]
+
+		if self.smi_log != '':
+			# See if nvidia-smi is even present on this machine.
+			try:
+				text = subprocess.getoutput('which nvidia-smi')
+				if text.isspace() or text == '':
+					self.smi_log = ''
+				else:
+					self.smi_outputs = []
+			except:
+				self.smi_log = ''
+
+			msg = "Determined that nvidia-smi is not present on this machine."
+			if self.smi_log == '':
+				if self.log is not None:
+					self.log.log(msg)
+			
 
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
@@ -552,6 +614,15 @@ class Trainer:
 			if self.log is not None:
 				self.log.log("wrote energy log \'%s\'"%(self.energy_file))
 
+		if self.smi_log != '':
+			with open(self.smi_log, 'w') as file:
+				for stdout in self.smi_outputs:
+					file.write(('-' * 20) + 'output' + ('-' * 20) + '\n\n')
+					file.write(stdout)
+
+			if self.log is not None:
+				self.log.log("wrote nvidia-smi log \'%s\'"%(self.smi_log))
+
 		# Write the final neural network file.
 		if self.iterations != 0:
 			layers = self.nn.cpu().getNetworkValues()
@@ -564,7 +635,9 @@ class Trainer:
 			self.log.unindent()
 
 	def restart_training_and_randomize(self):
+		self.nn = self.nn.cpu()
 		self.nn.randomize_self()
+		self.nn = self.nn.to(self.device)
 
 		self.optimizer = optim.LBFGS(
 			self.nn.getParameters(), 
@@ -625,6 +698,14 @@ class Trainer:
 					layers = self.nn.getNetworkValues()
 					self.potential.layers = layers
 					self.potential.writeNetwork(path)
+
+			if self.smi_log != '':
+				if self.iteration % 50 == 0:
+					try:
+						smi_stdout = subprocess.getoutput("nvidia-smi")
+						self.smi_outputs.append(smi_stdout)
+					except:
+						self.smi_outputs.append("nvidia-smi call failed")
 			
 			# Perform an evaluate and correct step, while storing
 			# the resulting loss in self.training_losses.

@@ -133,6 +133,13 @@
 		"predicate"        : "run_training",
 		"description"      : "Seed the numpy rng with this number before deciding how to split the validation and training data. Useful for repeatability of results. Note: PyTorch does not guarentee determinism, so results may not be exact. Note: 0 is interpreted to mean that the system should use the default, probabilistic, seed."
 	},
+	"l2_regularization_prefactor" : {
+		"short_name"       : "-l",
+		"long_name"        : "--l2-regularization-coefficient",
+		"type"             : "float",
+		"predicate"        : "run_training",
+		"description"      : "The factor to multiply the L2 weight normalization by before adding it to the loss. If this is 0.0, no L2 weight regularization is applied. L2 loss is not included in the loss log."
+	},
 	"log_path" : {
 		"type"        : "string",
 		"description" : "The path to the file to put logs into."
@@ -184,5 +191,9 @@
 	"error_restart_level" : {
 		"type"        : "float",
 		"description" : "If this error is exceeded at any point in the training, the neural network fitting parameters will be randomized and the whole training process will be restarted. Use 0.0 to indicate that restarts should never occur. The maximum number of restarts is 3. After that, the system will shutdown."
+	},
+	"nvidia_smi_log" : {
+		"type"        : "str",
+		"description" : "The file to log the output of the nvidia-smi command into. If this is blank, it will not be logged. If specified, the output will be logged every 50 iterations."
 	}
 }

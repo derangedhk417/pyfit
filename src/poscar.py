@@ -151,3 +151,20 @@ class PoscarStructure:
 			float(cells[1])*scale,
 			float(cells[2])*scale
 		])
+
+	def _dumpVector(self, vec):
+		return '%.10f %.10f %.10f'%(vec[0], vec[1], vec[2])
+
+	def __str__(self):
+		res  = ''
+		res += '%s\n'%self.comment
+		res += '%f\n'%self.scale_factor
+		res += '%s\n'%self._dumpVector(self.a1)
+		res += '%s\n'%self._dumpVector(self.a2)
+		res += '%s\n'%self._dumpVector(self.a3)
+		res += '%i\n'%self.n_atoms
+		res += '%s\n'%('c' if self.is_cartesian else 'd')
+		for atom in self.atoms:
+			res += '%s\n'%self._dumpVector(atom)
+		res += '%f\n'%self.energy
+		return res

@@ -5,6 +5,7 @@
 
 # this is just used for random number generation
 import numpy as np
+import code
 
 # this parses and stores the header information
 from config import PotentialConfig
@@ -23,13 +24,14 @@ class NetworkPotential:
 		previous = self.config.layer_sizes[0]
 		for n in self.config.layer_sizes[1:]:
 			n_values += n * previous + n
-			previous = n
+			previous  = n
 
 		self.network_values = np.random.uniform(
 			-self.config.max_random, 
 			self.config.max_random, 
 			n_values
 		).tolist()
+
 
 	def loadFromFile(self, file_path):
 		if self.log is not None:
