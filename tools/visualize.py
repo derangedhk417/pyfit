@@ -4,7 +4,8 @@
 # This script is helpful for producing good quality graphs of the properties 
 # of a trained neural network. It only tries to generate the actual graph
 # contents. Axis labels and titles are meant to be done elsewhere. I usually
-# use keynote to accomplish this.
+# use keynote to accomplish this. I recomend saving the plots as .eps files
+# when you are done so they won't suffer a loss of quality when you zoom in.
 
 import code
 import argparse
@@ -100,24 +101,6 @@ def volume_energy_plots(full_structures, nn_energies, filters, title):
 		v     = [i[1] for i in items]
 		e_nn  = [i[3] / i[2] for i in items]
 		e_dft = [i[4] / i[2] for i in items]
-
-		# code.interact(local=locals())
-
-		# Calculate the first derivative of both the DFT and
-		# nn data.
-		x_nn, y_nn = d1(v, [e[0] for e in e_nn])
-		xdft, ydft = d1(v, e_dft)
-
-		x_nn2, y_nn2 = d1(x_nn, y_nn)
-		xdft2, ydft2 = d1(xdft, ydft)
-
-		e_d1 = np.abs(np.array(ydft) - np.array(y_nn)).mean()
-		e_d2 = np.abs(np.array(ydft2) - np.array(y_nn2)).mean()
-		e    = np.abs(np.array([e[0] for e in e_nn]) - np.array(e_dft)).mean()
-
-		print("d2 error: %f"%e_d2)
-		print("d1 error: %f"%e_d1)
-		print("d0 error: %f"%e)
 		
 		pl = ax.scatter(x_nn, y_nn, s=50, color='red', marker='1')
 		pl = ax.scatter(
@@ -140,18 +123,6 @@ def volume_energy_plots(full_structures, nn_energies, filters, title):
 	format_axis(ax)
 	ax.set_title(title)
 	plt.show()
-
-def d1(x, y):
-	x_d = []
-	y_d = []
-
-	for xi in range(len(x) - 1):
-		location = x[xi] + ((x[xi + 1] - x[xi]) / 2)
-		dy       = (y[xi + 1] - y[xi]) / (x[xi + 1] - x[xi])
-		x_d.append(location)
-		y_d.append(dy)
-
-	return x_d, y_d
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(

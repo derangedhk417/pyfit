@@ -349,6 +349,16 @@ def PrintHelp(args):
 	program_name = 'pyfit.py'
 	# Print the whole help message.
 
+	if args is not None:
+		printed = False
+		for arg in args[1:]:
+			if arg != '--help' and arg != '-h':
+				printed = True
+				DetailedHelp(arg)
+
+		if printed:
+			exit(0)
+
 	# We need a list of all short names, all long names and all 
 	# descriptions for all arguments.
 	short_names  = []
@@ -376,6 +386,7 @@ def PrintHelp(args):
 	names_width = 4 + short_name_width + 2 + long_name_width + 4
 
 	help_str  = 'Usage: python3 %s [options]\n\n'%program_name
+	help_str += 'python3 pyfit.py -h "variable name" for detailed help.\n\n'
 	help_str += 'options:\n'
 	for sname, lname, desc in zip(short_names, long_names, descriptions):
 		sdiff = short_name_width - len(sname)
@@ -419,6 +430,47 @@ def PrintHelp(args):
 			help_str += '\n'.join(lines) + '\n'
 
 	print(help_str)
+
+def DetailedHelp(word):
+	# Try to convert the keyword into a value from the pyfit
+	# arglist and then print the description.
+	word = word.lstrip('-').replace('-', ' ')
+
+	# Find the name in the arglist that has the lowest LevenshteinDistance
+	# from the word and print it's description.
+	full_name = [w for w in argument_specification]
+	names     = [w.replace('_', ' ') for w in argument_specification]
+	distances = [LevenshteinDistance(w, word) for w in names]
+	closest   = full_name[distances.index(min(distances))]
+
+	description = argument_specification[closest]['description']
+
+	print("variable    : %s"%closest)
+	print("description : %s"%description)
+	print('\n')
+
+
+# Stolen from https://stackoverflow.com/a/24172422/10470575
+def LevenshteinDistance(s1, s2):
+    m = len(s1) + 1
+    n = len(s2) + 1
+
+    tbl = {}
+    for i in range(m):
+    	tbl[i, 0] = i
+    for j in range(n):
+    	tbl[0, j] = j
+
+    for i in range(1, m):
+        for j in range(1, n):
+            cost  = 0 if s1[i - 1] == s2[j - 1] else 1
+            tbl[i, j] = min(
+            	tbl[i, j - 1] + 1, 
+            	tbl[i - 1, j] + 1, 
+            	tbl[i - 1, j - 1] + cost
+        	)
+
+    return tbl[i, j]
 
 def ValidateArgs(args):
 	# Firstly, make sure that all of the relevant input files exist and are 

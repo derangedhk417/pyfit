@@ -28,4 +28,3 @@ This will initialize an interactive console at that line of code and allow you t
 - Add various checks during the training process for things that could go wrong.
    This should include things like running out of memory, among others.
 - Implement non-cartesian poscar coordinates.
-- Add seed parameter for if semi-deterministic results are needed. Don't forget torch.seed().

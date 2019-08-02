@@ -142,7 +142,7 @@
 	},
 	"log_path" : {
 		"type"        : "string",
-		"description" : "The path to the file to put logs into."
+		"description" : "The path to the file to put log info into."
 	},
 	"e_shift" : {
 		"type"        : "float",

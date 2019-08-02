@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 
-import numpy             as np
+# Author: Adam Robinson
+# This script is meant to make it easier to run pyfit on a cluster from your
+# local machine. It is pretty general and will work for other things too
+# though. You need sshpass for this to work. This script is meant for slurm
+# but it can be modified fairly easily to work for other job managers.
+#
+# See cluster_template.sh if you want to get this working on your own system.
+
+import numpy as np
 import code
 import argparse
 import os
@@ -84,12 +92,11 @@ def validate_args(args, parser):
 			parser.print_help()
 			exit(1)
 
-
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
 		description='Runs a job on the specified cluster, assuming that it ' +
-		'uses slurm as its job manager.',
+		'uses slurm as its job manager. NOTE: Requires sshpass. ' +
+		'(sudo apt install sshpass)',
 		epilog='Will create a slurm script, copy it to the cluster and ' +
 		'execute it using ssh.'
 	)

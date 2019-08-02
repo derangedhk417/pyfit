@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 # Author: Adam Robinson
-# This script is helpful for producing good quality graphs of the properties 
-# of a trained neural network. It only tries to generate the actual graph
-# contents. Axis labels and titles are meant to be done elsewhere. I usually
-# use keynote to accomplish this.
+# This script is meant to generate a view of the potential energy surface
+# of a network potential where all but two dimensions are frozen. It will
+# take the specified structure and determine the energy of a "probe" atom
+# at each point in a specified grid. It will then produce a heatmap of this
+# energy. You can also use this script to render multiple images at various
+# interpolated positions throughout a structure. This is useful if you want
+# to run the generated frames through FFMpeg to generate a video.
 
 import code
 import argparse

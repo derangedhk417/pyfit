@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# This script is used by cluster.py to generate a slurm submission script.
+# It replaces all of the {{{}}} items with their corresponding command
+# line arguments to the cluster.py program. If you carefully modify this,
+# and modify parts of cluster.py you should be able to get it working for
+# other job managers. You will almost certainly need to change the module
+# and source commands to match your system.
+
 rm {{{job_name}}}.sh
 
 current_path=${PWD}
