@@ -35,7 +35,7 @@ from util import ProgressBar
 # This class will produce one copy of the above values for training and one
 # for validation.
 class TorchTrainingData:
-	def __init__(self, training_set, validation_ratio, seed=None):
+	def __init__(self, training_set, validation_ratio, **kwargs):
 		self.tensor_type = torch.float32
 		self.np_type     = np.float32
 		self.val_ratio   = validation_ratio
@@ -54,8 +54,14 @@ class TorchTrainingData:
 		# First, get a list of training inputs by their group.
 		by_group, group_names = training_set.getAllByGroup()
 
-		if seed is not None and seed != 0:
-			np.random.seed(seed)
+		if 'seed' in kwargs and kwargs['seed'] != 0:
+			np.random.seed(kwargs['seed'])
+
+		self.use_reduction = True
+		if 'use_reduction' in kwargs and not kwargs['use_reduction']:
+			# We aren't using a reduction matrix, instead we are using
+			# a mask.
+			self.use_reduction = False
 
 		# Within each group, select the largest and smallest structure and put
 		# it into the set of structures that will be used for training. Select
@@ -174,28 +180,64 @@ class TorchTrainingData:
 
 		n_inputs = torch.tensor(n_structures, dtype=self.tensor_type)
 
-		# Now we need to perform the most complicated part of this process,
-		# constructing the reduction matrix. 
-		reduction = np.zeros((n_structures, n_atoms), dtype=self.np_type)
-		
-		row    = 0
-		column = 0
-		for struct in structures:
-			for atom in struct:
-				reduction[row][column] = 1.0
-				column += 1
-			row += 1
+		if self.use_reduction:
 
-		reduction = torch.as_tensor(reduction, dtype=self.tensor_type)
+			# Now we need to perform the most complicated part of this process,
+			# constructing the reduction matrix. 
+			reduction = np.zeros((n_structures, n_atoms), dtype=self.np_type)
+			
+			row    = 0
+			column = 0
+			for struct in structures:
+				for atom in struct:
+					reduction[row][column] = 1.0
+					column += 1
+				row += 1
 
-		return (
-			energies,
-			reciprocals,
-			lsp,
-			n_inputs,
-			reduction,
-			volumes
-		)
+			reduction = torch.as_tensor(reduction, dtype=self.tensor_type)
+			return (
+				energies, reciprocals, lsp,
+				n_inputs, reduction, volumes
+			)
+
+		else:
+			# If we are not using a reduction matrix, we need to instead
+			# determine the maximum number of atoms in a structure and pad
+			# the inputs accordingly.
+			max_n_atom = max([
+				_in.structure_n_atoms for s in structures for _in in s
+			])
+			
+			# Now we rebuild the inputs with zeros for the extra values.
+			# We also shape the input so that there is an additional dimension
+			# corresponding to the structure. Finally, we build a mask by which 
+			# the output can be multiplied in order to eliminate pad outputs.
+			lsp = np.zeros(
+				(n_structures, max_n_atom, n_params_per_atom), 
+				dtype=self.np_type
+			)
+
+			# This mask will effectively replace the reduction matrix.
+			mask = np.zeros(
+				(n_structures, max_n_atom, 1),
+				dtype=self.np_type
+			)
+
+			for sid, struct in enumerate(structures):
+				for aid, atom in enumerate(struct):
+					lsp[sid, aid, :]  = atom.structure_params
+					mask[sid, aid, 0] = 1.0
+
+			# Using torch.as_tensor instead of torch.tensor will cause the same 
+			# underlying buffer to be used, instead of copying it. This is faster.
+			lsp  = torch.as_tensor(lsp,  dtype=self.tensor_type)
+			mask = torch.as_tensor(mask, dtype=self.tensor_type)
+
+
+			return (
+				energies, reciprocals, lsp,
+				n_inputs, mask, volumes
+			)
 
 	def to(self, device):
 		self.train_energies    = self.train_energies.to(device)
@@ -218,7 +260,7 @@ class TorchTrainingData:
 
 # This is the structure that actually gets used for the training process.
 class TorchNetwork(nn.Module):
-	def __init__(self, network_potential, reduction_matrix, l2):
+	def __init__(self, network_potential, reduction_matrix, l2, mask=False):
 		super(TorchNetwork, self).__init__()
 
 		tt = torch.float32
@@ -232,6 +274,7 @@ class TorchNetwork(nn.Module):
 		# regular Python list isn't recognized by PyTorch and 
 		# subsequent calls to TorchNet.parameters() will not work.
 		self.layers           = []
+		self.mask             = mask
 		self.params           = nn.ParameterList()
 		self.activation_mode  = network_potential.config.activation_function
 		self.reduction_matrix = reduction_matrix
@@ -307,7 +350,11 @@ class TorchNetwork(nn.Module):
 			for layer in self.layers[1:-1]:
 				x0 = torch.sigmoid(layer(x0)) - self.offset
 
-		x0 = self.reduction_matrix.mm(self.layers[-1](x0))
+		if self.mask:
+			x0 = torch.mul(self.layers[-1](x0), self.reduction_matrix)
+			x0 = x0.sum(dim=1, keepdim=False)
+		else:
+			x0 = self.reduction_matrix.mm(self.layers[-1](x0))
 		return x0
 
 	# Performs a feed forward, but doesn't use the reduction matrix.
@@ -394,6 +441,7 @@ class Trainer:
 		# a set of inputs and some parameters for how to run the training.
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
+		self.mask            = config.no_reduction_matrix
 		self.smi_log         = config.nvidia_smi_log
 		self.l2              = config.l2_regularization_prefactor
 		self.restart_error   = config.error_restart_level
@@ -422,7 +470,8 @@ class Trainer:
 		self.dataset = TorchTrainingData(
 			training_set,
 			config.validation_ratio,
-			self.seed
+			seed=self.seed,
+			use_reduction=(not self.mask)
 		)
 
 		if self.log is not None:
@@ -440,7 +489,8 @@ class Trainer:
 		self.nn = TorchNetwork(
 			network_potential, 
 			self.dataset.train_reduction,
-			self.l2
+			self.l2,
+			mask=self.mask
 		)
 
 		if torch.cuda.is_available() and not config.force_cpu:

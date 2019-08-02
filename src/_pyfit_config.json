@@ -32,5 +32,6 @@
 	"validation_split_seed"       : 2,
 	"error_restart_level"         : 0.0,
 	"l2_regularization_prefactor" : 0.0,
-	"nvidia_smi_log"              : ""
+	"nvidia_smi_log"              : "",
+	"no_reduction_matrix"         : false
 }

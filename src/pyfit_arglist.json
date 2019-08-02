@@ -195,5 +195,9 @@
 	"nvidia_smi_log" : {
 		"type"        : "str",
 		"description" : "The file to log the output of the nvidia-smi command into. If this is blank, it will not be logged. If specified, the output will be logged every 50 iterations."
+	},
+	"no_reduction_matrix" : {
+		"type"        : "flag",
+		"description" : "Don't use a reduction matrix, instead, use a mask and sum operation."
 	}
 }
