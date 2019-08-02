@@ -87,14 +87,14 @@ def RunPyfit(config):
 				log.log("potential.config != training_set.config")
 				return 1
 
-			if not config.no_warn:
-				if not training_set.generateWarnings(config.validation_ratio):
-					return 1
-
 		if config.randomize:
 			log.log("Randomizing network potential parameters.")
 			potential.randomizeNetwork()
 			potential.loadNetwork(None, values_loaded=True)
+
+		if not config.no_warn:
+			if not training_set.generateWarnings(config.validation_ratio):
+				return 1
 
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.

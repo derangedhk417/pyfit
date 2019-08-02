@@ -118,6 +118,21 @@ def ParseArgs(arglist):
 					print(msg)
 					PrintHelp(arglist)
 					exit(1)
+			elif typestring == 'float':
+				if arg[1] is None:
+					msg  = "%s is a value argument. Please specify a value."
+					msg %= arg[0]
+					print(msg)
+					PrintHelp(arglist)
+					exit(1)
+
+				try:
+					arg_dictionary[proper_name] = float(arg[1])
+				except:
+					msg = "%s is a float argument."%arg[0]
+					print(msg)
+					PrintHelp(arglist)
+					exit(1)
 
 		else:
 			# This isn't a recognized argument. For now, just assume that its a
@@ -475,6 +490,7 @@ def ValidateArgs(args):
 		args.loss_log_path            = unique(args.loss_log_path)
 		args.validation_log_path      = unique(args.validation_log_path)
 		args.energy_volume_file       = unique(args.energy_volume_file)
+		args.log_path                 = unique(args.log_path)
 
 		if not os.path.isfile(args.training_set_in) and args.run_training:
 			# It's ok if the training set doesn't exist, as long as 

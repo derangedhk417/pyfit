@@ -12,7 +12,7 @@ log_instances = []
 
 class Log:
 	def __init__(self, file_name, max_col=80, tab_size=4):
-		self.file     = open(file_name, 'w', 1024*10)
+		self.file     = open(file_name, 'w')
 		self.max_col  = max_col
 		self._indent  = 0
 		self.tab_size = 4
@@ -39,6 +39,7 @@ class Log:
 			lines.append(current_line)
 
 		self.file.write('\n'.join(lines) + '\n')
+		self.file.flush()
 
 	def indent(self):
 		self._indent += 1
@@ -55,7 +56,10 @@ class Log:
 @atexit.register
 def cleanup():
 	for log in log_instances:
-		del log
+		try:
+			log.file.close()
+		except:
+			print("Failed to close log file. It may be incomplete.")
 
 # Returns the dimensions of the current terminal window or a good guess if 
 # something goes wrong.
