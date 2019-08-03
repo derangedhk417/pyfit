@@ -6,3 +6,4 @@ test/nn/k-fold-good-candidate-01.nn.dat
 clean.sh
 *-VIDEO-*
 set.txt
+*.DS_Store
