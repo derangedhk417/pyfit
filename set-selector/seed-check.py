@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 # Author: Adam Robinson
-# This program will determine the mean density of points in feature space
-# for each structure in the training data. It will then attempt to select
-# the training-validation split that maximizes the mean density of points
-# around the validation data points.
+# This is designed to analyze one or more training-validation splits.
+# It tries to quantify the degree to which the validation data points
+# are an interpolation between the training data points.
 
 import code
 import argparse
@@ -31,8 +30,8 @@ from fnmatch      import filter     as match
 
 def get_args():
 	parser = argparse.ArgumentParser(
-		description='Constructs a training-validation split that maximizes ' +
-		'the data point density in feature space around all validation inputs ',
+		description='Helps you construct training-validation splits that ' +
+		'are a good interpolation over the training set.',
 	)
 
 	parser.add_argument(
@@ -43,6 +42,12 @@ def get_args():
 	parser.add_argument(
 		'-r', '--validation-ratio', dest='ratio', type=float, default=0.9,
 		help='The ratio of training data to all data (default 0.9)'
+	)
+
+	parser.add_argument(
+		'-s', '--seed-range', dest='seed_range', type=int, 
+		default=[1, 10], nargs=2, metavar=('LOW', 'HIGH'),
+		help='The range of seed values to try for the split.'
 	)
 
 	parser.add_argument(
@@ -143,27 +148,14 @@ if __name__ == '__main__':
 	else:
 		device = 'cuda:0'
 
-	# Before we can start setting up the training set, we need
-	# to build a training set structure where everything is
-	# considered training data.
-	dataset = TorchTrainingData(
-		training_set,
-		1.0,
-		0
-	).to(device)
-
-	# Now we need to score each structure in the training data as 
-	# if it were validation data and the rest of the data remained
-	# training data.
-
-	structures = dataset.full_training_structures
-
-	
-
 	try:
 		for seed in range(args.seed_range[0], args.seed_range[1] + 1):
 			# Split the training data into training and validation sets.
-			
+			dataset = TorchTrainingData(
+				training_set,
+				args.ratio,
+				seed
+			).to(device)
 
 			# Run the score function.
 			density_stats = score(
