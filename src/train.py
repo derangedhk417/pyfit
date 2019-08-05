@@ -289,10 +289,6 @@ class TorchNetwork(nn.Module):
 
 		return output_layers
 
-	# TODO: Probably split this into two functions and dynamically assign 
-	#       based on mode. Should be a little faster.
-	# TODO: Look into the builtin pytorch method that evaluates a list
-	#       of nn.Linear internally. Probably faster.
 	# This function actually defines the operation of the Neural Network
 	# during feed forward.
 	def forward(self, x):
@@ -364,9 +360,6 @@ class TorchNetwork(nn.Module):
 # underestimated the amount of ram necessary and crashed the training because
 # I launched something else midway through. This feature would also be useful
 # for people who have a limit on the length of jobs they can run on clusters.
-# 
-# TODO: Implement pickling and unpickling of this class, as well as resuming
-#       training from where the process left off.
 class Trainer:
 	# The last argument is the config structure generated when the program
 	# parses its command line arguments. You can also just as easily make

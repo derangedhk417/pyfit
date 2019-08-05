@@ -30,18 +30,15 @@ def GenerateNeighborList(structures, potential, log=None):
 
 	progress = ProgressBar("Neighbor List ", 22, n_total, update_every = 25)
 	progress.estimate = False
-	# In some cases this needs to be multiplied by 1.5.
-	# TODO: Figure out exactly when, I haven't encountered this yet.
+	
+	# IMPORTANT NOTE: This needs to be multiplied by 1.5 when PINN 
+	#                 gets implemented.
 	cutoff = potential.config.cutoff_distance * 1.0
 
 	n_processed = 0
 
 	neigborLists = []
 	for structure in structures:
-		# TODO: Implement the optimized neighbor list algorithm I came up with.
-		#       It isn't really necessary, but it would be a good test of the
-		#       algorithm and could speed the process up by as much as a factor
-		#       of ten if I'm right about it. 
 
 		# Normalize the translation vectors.
 		a1_n = np.linalg.norm(structure.a1)

@@ -168,17 +168,10 @@ def get_args():
 def modified_neighbor_list(base, locations, potential):
 
 	n_total = len(locations)
-
-	# In some cases this needs to be multiplied by 1.5.
-	# TODO: Figure out exactly when, I haven't encountered this yet.
-	cutoff = potential.config.cutoff_distance * 1.0
+	cutoff  = potential.config.cutoff_distance * 1.0
 
 	n_processed = 0
-	# TODO: Implement the optimized neighbor list algorithm I came up with.
-	#       It isn't really necessary, but it would be a good test of the
-	#       algorithm and could speed the process up by as much as a factor
-	#       of ten if I'm right about it. 
-
+	
 	# Normalize the translation vectors.
 	a1_n = np.linalg.norm(base.a1)
 	a2_n = np.linalg.norm(base.a2)
