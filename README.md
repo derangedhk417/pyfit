@@ -39,6 +39,8 @@ sudo pip3 install torch torchvision numpy
 
 The easiest way to start using pyfit is to clone this repository, cd into it and run ./install.sh. pyfit gets the majority of its direction from its config file, which is a json file. 
 
+You don't need to run the install script. All it does is add pyfit.py to your path. You can do that manually or just invoke it using the path to the pyfit.py file.
+
 ### Config File
 
 This file specifies everything that the program should do when it runs. The default location for it is `src/_pyfit_config.json`. You can override this by passing `--config-file=my_file.json` to the program at the command line. The config file that comes with this repo contains all of the configuration parameters that pyfit supports. You can override them at the command line. pyfit will print help info if you specify `-h` or `--help`. Configuration variables not listed in the help message can still be overriden. Their name is equal to their name in the config json file, with `--` prepended to them and all underscores replaced with hyphens. 
