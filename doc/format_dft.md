@@ -5,7 +5,7 @@ pyfit expects the DFT data that it uses to be in a single file that is essential
 
 ## Format
 
-Each atomic structure for which you have calculated a DFT energy should have one entry in this file. Each entry has the following format.
+Each atomic structure for which you have calculated a DFT energy should have one entry in this file. Each entry has the following format. The code that parses this file is [here](https://github.com/derangedhk417/pyfit/blob/9fd3577d6c49e981ca98bdd888a14803c8130148/src/poscar.py#L28) and [here](https://github.com/derangedhk417/pyfit/blob/9fd3577d6c49e981ca98bdd888a14803c8130148/src/poscar.py#L118)
 
 ### Line 1
 This can technically be anything, but you should fill it with a string of characters that identifies the structure in some way. Some of the tools that come with pyfit treat this as an identifier for the structural subgroup that the structure is a part of. For example, the silicon dataset used by this research group calls all structures that are unpterturbed diamond cubic silicon `Si_B1`. Example:
