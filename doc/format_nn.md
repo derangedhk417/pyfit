@@ -76,3 +76,11 @@ The number of layers in the neural network followed by the size of each layer. I
 ```
 
 This example is a network with 3 hidden layers and a total of 40 inputs to the first layer. The total number of actual layers is 5. **note**, the number of inputs (in this case 40) must be the number of legendre polynomial orders times the number of r_0 values.
+
+### Lines 9 Onward
+
+I could try to explain this format with words, but I think that it is best understood by looking at the code. It isn't really an intuitive format, at least not when you look at the matrix multiplication operations that a neural network actually uses.
+
+See [here](https://github.com/derangedhk417/pyfit/blob/ccaec652f320e17684c320a610b2bfa908f587d8/src/potential.py#L121)
+
+The first cell in each of these lines is the value of the weight or bias. The second cell is maintained for backwards compatibility, treat it as reserved.
