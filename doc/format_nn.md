@@ -84,3 +84,23 @@ I could try to explain this format with words, but I think that it is best under
 See [here](https://github.com/derangedhk417/pyfit/blob/ccaec652f320e17684c320a610b2bfa908f587d8/src/potential.py#L121)
 
 The first cell in each of these lines is the value of the weight or bias. The second cell is maintained for backwards compatibility, treat it as reserved.
+
+## Final Notes
+
+Here is a truncated example file.
+
+```
+ 1 0.5000000 1 
+ 1 
+ Si 28.0855000
+ 0 0.1000000 4.5000000 1.0000000 1.0000000
+ 5 0 1 2 4 6
+ 8 1.5 1.8571 2.2143 2.5714 2.9286 3.2857 3.6429 4.0
+ 1 10.787010 5.237710 4.040920 1.365000 0.104528 0.979074 0.891061 0.803526
+ 6 40 16 16 16 16 1
+ -8.83409436e-02   0.0000
+  3.92862164e-02   0.0000
+ -6.30716509e-02   0.0000
+ -6.23729861e-02   0.0000
+ -9.24373265e-02   0.0000
+```
