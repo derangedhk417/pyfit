@@ -9,8 +9,8 @@ pyfit uses PyTorch to train feed forward, fully connected neural networks to int
 
 pyfit performs two primary tasks
 
-1) It converts poscar structures and structure energies into training set files that can be used to train neural network.
-2) It trains neural networks using these training set file.
+1) It converts poscar structures and structure energies into training set files that can be used to train neural networks.
+2) It trains neural networks using these training set files.
 
 A typical run of pyfit will include the following steps.
 
@@ -35,8 +35,6 @@ Usually the following command line will suffice:
 sudo pip3 install torch torchvision numpy
 ```
 
-If you want to use CUDA to accelerate the training process, you'll need to install that as well.
-
 ## Getting Started
 
 The easiest way to start using pyfit is to clone this repository, cd into it and run ./install.sh. pyfit gets the majority of its direction from its config file, which is a json file. 
@@ -49,7 +47,7 @@ This file specifies everything that the program should do when it runs. The defa
 
 pyfit will automatically use a CUDA device if available. You can pass `--force-cpu` to it if you don't want this to happen. If you are running pyfit on a cluster, in a job with multiple simultaneous runs of pyfit, you can pass `--gpu-affinity=#` to it, in order to assign a particular run to a particular GPU. On some systems, PyTorch will actually have worse performance on a GPU. Additionally, some network architectures will cause poor performance if too many CPU cores are used. You may want to experiment with different values of `--n-threads=#` in order to find the best value.
   
-pyfit tries not to overwrite existing files that might be important. If it is giving you an error message and you don't care, pass --overwrite in the command line.
+pyfit tries not to overwrite existing files that might be important. If it is giving you an error message and you don't care, pass `--overwrite` in the command line. You can also generate sequentially numbered output files by specifying `--unique` in the command line.
 
 #### Generate Training Set
 
@@ -106,7 +104,7 @@ How often to calculate the validation loss. This process has a significant cost,
 Where to log the validation loss of the neural network. This is in the same format as the training loss log.
 
 `energy_volume_interval`  
-How often to store energy volume data. This information is meant to be graphed as a sanity check of the neural network. It allows you to see the correlation between the per-atom volume of a structure and the per-atom energy of a structure, as determined by the neural network.
+How often to store energy vs. volume data. This information is meant to be graphed as a sanity check of the neural network. It allows you to see the correlation between the per-atom volume of a structure and the per-atom energy of a structure, as determined by the neural network.
 
 `energy_volume_file`  
 Where to store the energy vs. volume information. The first line will be the per-atom volume of each structure. All subsequent lines will be the iteration, followed by the per-atom energy of each structure at that training iteration. This file is large, and this process is expensive. Exporting too frequently will slow things down.
