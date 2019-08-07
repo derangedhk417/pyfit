@@ -206,6 +206,23 @@ if __name__ == '__main__':
 	val_diff_scaled = torch.mul(val_diff, dataset.val_reciprocals)
 	val_diff_scaled = val_diff_scaled.detach().numpy()
 
+	verr = np.array(val_diff_scaled)
+	vstd = verr.std()
+
+	outlier_removed = verr[np.abs(verr) < 3*vstd]
+
+	print("Validation STD:        %f"%vstd)
+	print("Original Count:        %s"%str(val_diff_scaled.shape))
+	print("Outlier Removed Count: %s"%str(outlier_removed.shape))
+
+	v_rmse             = np.sqrt((verr**2).mean())
+	v_rmse_no_outliers = np.sqrt((outlier_removed**2).mean())
+
+	print("Original Validation Error: %f"%v_rmse)
+	print("Outlier Removed Error:     %f"%v_rmse_no_outliers)
+
+
+
 	# Print out the 20 worst structural groups and their validation
 	# error.
 	val_structures = dataset.full_validation_structures

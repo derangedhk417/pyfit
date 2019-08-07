@@ -154,7 +154,7 @@
 	},
 	"network_backup_interval" : {
 		"type"        : "int",
-		"description" : "The interval to backup the neural network on. 0 = don\"t store backups."
+		"description" : "The interval to backup the neural network on. 0 = don't store backups."
 	},
 	"loss_log_path" : {
 		"type"        : "string",

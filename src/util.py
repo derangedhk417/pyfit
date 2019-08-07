@@ -22,23 +22,15 @@ class Log:
 	def log(self, text):
 		# Split the logged information on spaces and add appropriate newline
 		# characters and spaces to emulate tabs.
-		words = text.split(' ')
 
-		lines = []
+		lines        = text.split('\n')
+		tabbed_lines = []
 		idx   = 0
-		while idx < len(words):
-			current_line = ' '*(self._indent * self.tab_size)
+		for line in lines:
+			tabbed_lines.append(' '*(self._indent * self.tab_size) + line)
 
-			while len(current_line) < self.max_col and idx < len(words):
-				if len(current_line) + len(words[idx]) + 1 < self.max_col:
-					current_line += words[idx] + ' '
-					idx          += 1
-				else:
-					break
 
-			lines.append(current_line)
-
-		self.file.write('\n'.join(lines) + '\n')
+		self.file.write('\n'.join(tabbed_lines) + '\n')
 		self.file.flush()
 
 	def indent(self):
