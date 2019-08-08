@@ -543,6 +543,7 @@ def ValidateArgs(args):
 		args.validation_log_path      = unique(args.validation_log_path)
 		args.energy_volume_file       = unique(args.energy_volume_file)
 		args.log_path                 = unique(args.log_path)
+		args.nvidia_smi_log           = unique(args.nvidia_smi_log)
 
 		if not os.path.isfile(args.training_set_in) and args.run_training:
 			# It's ok if the training set doesn't exist, as long as 

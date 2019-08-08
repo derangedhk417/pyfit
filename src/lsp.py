@@ -220,11 +220,10 @@ def computeParameters(neighbors, potential_config):
 	# The following lines exist to adhere to a combination of the 
 	# hyperparameter definition in the network potential file and the 
 	# configuration values specified in the config file.
-	if potential_config.gi_mode == 1:
-		sp  = structural_parameters
-		sp /= np.square(np.tile(potential_config.r0, len_pm))
-		
-		return np.log(sp + potential_config.gi_shift)
+	sp  = structural_parameters
+	sp /= np.square(np.tile(potential_config.r0, len_pm))
+	
+	if potential_config.gi_mode == 5:
+		return np.arcsinh(sp)
 	else:
-		sp = structural_parameters / 16.0
 		return sp
