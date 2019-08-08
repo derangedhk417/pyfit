@@ -10,8 +10,9 @@ from util   import ProgressBar
 from copy   import deepcopy
 
 class TrainingSet:
-	def __init__(self, log=None):
-		self.log = log
+	def __init__(self, log=None, has_force=False):
+		self.log       = log
+		self.has_force = has_force
 
 	def loadFromFile(self, file_path):
 		if self.log is not None:
@@ -57,7 +58,8 @@ class TrainingSet:
 			atom = TrainingInput().fromLines(
 				lines[idx], 
 				lines[idx + 1], 
-				parameters_per_atom
+				parameters_per_atom,
+				has_force=self.has_force
 			)
 
 			if atom.structure_id != current_id:
@@ -134,10 +136,18 @@ class TrainingSet:
 			training_input.structure_energy  = struct.energy
 			training_input.structure_volume  = struct_volume
 
+			
+
 			current_struct = []
 			for atom_idx in range(struct.n_atoms):
 				input_copy = deepcopy(training_input)
 				input_copy.structure_params = lsp[struct_idx][atom_idx]
+
+				if self.has_force:
+					input_copy.force = struct.forces[atom_idx].tolist()
+				else:
+					input_copy.force = None
+
 				current_struct.append(input_copy)
 
 			self.structures.append(current_struct)
@@ -176,14 +186,24 @@ class TrainingSet:
 			atom_idx = 0
 			for struct in self.structures:
 				for training_input in struct:
-					file.write('ATOM-%i %s %i %i %i %.6E %.6E\n'%(
+					if self.has_force:
+						force_string = "%.6E %.6E %.6E"%(
+							training_input.force[0],
+							training_input.force[1],
+							training_input.force[2]
+						)
+					else:
+						force_string = ""
+
+					file.write('ATOM-%i %s %i %i %i %.6E %.6E %s\n'%(
 						atom_idx,
 						training_input.group_name,
 						training_input.group_id,
 						training_input.structure_id,
 						training_input.structure_n_atoms,
 						training_input.structure_energy,
-						training_input.structure_volume
+						training_input.structure_volume,
+						force_string
 					))
 
 					current_params = training_input.structure_params
@@ -268,7 +288,7 @@ class TrainingSet:
 		return cells
 
 class TrainingInput:
-	def fromLines(self, line1, line2, n_lsp):
+	def fromLines(self, line1, line2, n_lsp, has_force=False):
 		cells1 = self._getCellsFromLine(line1)
 		self.group_name        = cells1[1]
 		self.group_id          = int(cells1[2])
@@ -277,6 +297,14 @@ class TrainingInput:
 		self.structure_energy  = float(cells1[5])
 		self.structure_volume  = float(cells1[6])
 		self.structure_params  = np.zeros(n_lsp)
+		self.force             = None
+
+		if has_force:
+			self.force = [
+				float(cells1[7]),
+				float(cells1[8]),
+				float(cells1[9])
+			]
 
 		# All remaining values should be structure parameters.
 		for idx, val in enumerate(self._getCellsFromLine(line2)[1:]):

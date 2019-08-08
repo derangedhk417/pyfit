@@ -42,10 +42,16 @@ def RunPyfit(config):
 	potential    = None
 	training_set = None
 
+	force_training = config.force_interval > 0
 
 	if config.generate_training_set:
-		poscar_data = PoscarLoader(config.e_shift, log=log)
+		poscar_data = PoscarLoader(
+			config.e_shift, 
+			log=log, 
+			has_force=force_training
+		)
 		poscar_data = poscar_data.loadFromFile(config.dft_input_file)
+
 		potential   = NetworkPotential(log=log)
 		potential   = potential.loadFromFile(config.neural_network_in)
 
@@ -75,7 +81,7 @@ def RunPyfit(config):
 		# training output file matches the training input file being used.
 		# Instead of loading from disk, just use the existing instance.
 		if not config.generate_training_set:
-			training_set = TrainingSet(log=log)
+			training_set = TrainingSet(log=log, has_force=force_training)
 			training_set = training_set.loadFromFile(config.training_set_in)
 			potential    = NetworkPotential(log=log)
 			potential    = potential.loadFromFile(config.neural_network_in)
@@ -96,9 +102,15 @@ def RunPyfit(config):
 			if not training_set.generateWarnings(config.validation_ratio):
 				return 1
 
+		kwargs = {}
+		if force_training:
+			kwargs['neighborList'] = neighborLists
+
+		kwargs['log'] = log
+
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.
-		trainer = Trainer(potential, training_set, config, log=log)
+		trainer = Trainer(potential, training_set, config, **kwargs)
 
 		trainer.train()
 

@@ -543,6 +543,8 @@ def ValidateArgs(args):
 		args.validation_log_path      = unique(args.validation_log_path)
 		args.energy_volume_file       = unique(args.energy_volume_file)
 		args.log_path                 = unique(args.log_path)
+		args.force_train_log          = unique(args.force_train_log)
+		args.force_val_log            = unique(args.force_val_log)
 
 		if not os.path.isfile(args.training_set_in) and args.run_training:
 			# It's ok if the training set doesn't exist, as long as 
@@ -791,6 +793,61 @@ def ValidateArgs(args):
 			print(msg)
 			PrintHelp(None)
 			return 1
+
+		if args.force_interval < 0:
+			msg = "Negative values are invalid for force_interval."
+			print(msg)
+			PrintHelp(None)
+			return 1
+		elif args.force_interval > 0:
+			# The force training is supposed to take place.
+			if args.force_learning_rate < 0.0:
+				msg  = "An illogical value was specified for "
+				msg += "force_learning_rate."
+				print(msg)
+				PrintHelp(None)
+				return 1
+
+			if args.force_train_log == "":
+				msg  = "No path was specified for logging the training loss "
+				msg += "of the neural network during force optimization. "
+				msg += "Please specify a value for  \'force_train_log\' in "
+				msg += "the config file."
+				print(msg)
+				PrintHelp(None)
+				return 1
+
+			if args.force_val_log == "":
+				msg  = "No path was specified for logging the validation loss "
+				msg += "of the neural network during force optimization. "
+				msg += "Please specify a value for  \'force_val_log\' in "
+				msg += "the config file."
+				print(msg)
+				PrintHelp(None)
+				return 1
+
+			# Make sure the logs are writeable.
+			try:
+				with open(args.force_train_log, 'w') as file:
+					file.write('test')
+
+				os.remove(args.force_train_log)
+			except:
+				msg  = "The force optimization training loss log does not "
+				msg += "appear to be writeable."
+				print(msg)
+				return 1
+
+			try:
+				with open(args.force_val_log, 'w') as file:
+					file.write('test')
+
+				os.remove(args.force_val_log)
+			except:
+				msg  = "The force optimization validation loss log does not "
+				msg += "appear to be writeable."
+				print(msg)
+				return 1
 
 		if args.energy_volume_file != "":
 			try:

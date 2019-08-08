@@ -211,5 +211,9 @@
 	"force_val_log" : {
 		"type"        : "str",
 		"description" : "The file to log the validation error in the force prediction in."
+	},
+	"force_finite_diff_step" : {
+		"type"        : "float",
+		"description" : "The distance in Angstroms to displace the atoms for finite difference calculations."
 	}
 }

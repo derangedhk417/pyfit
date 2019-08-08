@@ -9,7 +9,8 @@
 import numpy as np
 import torch
 import code
-from torch.autograd import grad
+from   util import ProgressBar
+
 
 class TorchForceCalculator:
 	# The config parameter should be an instance of PotentialConfig
@@ -31,6 +32,14 @@ class TorchForceCalculator:
 
 		lsp = None
 
+		progress = ProgressBar(
+			"Structural Parameters ", 
+			22, int(len(neighbors) / max_chunk),
+			update_every = 1
+		)
+
+		idx = 0
+
 		while chunk_start < len(neighbors):
 			self.loadNeighbors(neighbors[chunk_start:chunk_stride])
 			tmp = self._computeLSP()
@@ -46,6 +55,11 @@ class TorchForceCalculator:
 
 			chunk_stride = min(chunk_stride, len(neighbors))
 
+			idx += 1
+			progress.update(idx)
+
+		progress.finish()
+
 		return lsp
 
 	# This efficiently generates a set of LSPs suitable for calculating the
@@ -54,10 +68,9 @@ class TorchForceCalculator:
 	# x, y and z axes separately and calculate a set of LSPs for each
 	# displaced setup. The returned values will be as follows:
 	#
-	# 1) LSP0 -> Undisplaced LSP values
-	# 2) LSPx -> LSPs after x displacement
-	# 3) LSPy -> LSPs after y displacement
-	# 4) LSPz -> LSPs after z displacement
+	# 1) LSPx -> LSPs after x displacement
+	# 2) LSPy -> LSPs after y displacement
+	# 3) LSPz -> LSPs after z displacement
 	#
 	# From there, the gradient is 
 	#     ((M(LSPx) - M(LSP0))/disp)i + 
@@ -69,19 +82,20 @@ class TorchForceCalculator:
 		chunk_start  = 0
 		chunk_stride = chunk_start + max_chunk
 
-		lsp0 = None
 		lspx = None
 		lspy = None
 		lspz = None
 
+		progress = ProgressBar(
+			"Gradient Parameters ", 
+			22, int(len(neighbors) / max_chunk),
+			update_every = 1
+		)
+
+		idx = 0
+
 		while chunk_start < len(neighbors):
 			self.loadNeighbors(neighbors[chunk_start:chunk_stride])
-
-			tmp = self._computeLSP()
-			if lsp0 is None:
-				lsp0 = tmp
-			else:
-				lsp0 = torch.cat((lsp0, tmp), 0)
 
 			self.displace(0, disp)
 			tmp = self._computeLSP()
@@ -113,7 +127,12 @@ class TorchForceCalculator:
 
 			chunk_stride = min(chunk_stride, len(neighbors))
 
-		return lsp0, lspx, lspy, lspz
+			idx += 1
+			progress.update(idx)
+
+		progress.finish()
+
+		return lspx, lspy, lspz
 
 	# This deletes the rather large arrays of neighbors. The GC should
 	# do this automatically, but it never hurts to do it manually.

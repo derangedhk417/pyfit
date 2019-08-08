@@ -35,7 +35,28 @@ from util import ProgressBar
 # This class will produce one copy of the above values for training and one
 # for validation.
 class TorchTrainingData:
-	def __init__(self, training_set, validation_ratio, seed=None):
+	def __init__(self, training_set, validation_ratio, **kwargs):
+
+		if 'seed' in kwargs:
+			seed = kwargs['seed']
+		else:
+			seed = None
+
+		if 'force' in kwargs:
+			self.has_force = kwargs['force']
+		else:
+			self.has_force = False
+
+		if 'neighborList' in kwargs:
+			self.neighborList = kwargs['neighborList']
+		else:
+			self.neighborList = None
+
+		if 'config' in kwargs:
+			self.config = kwargs['config']
+		else:
+			self.config = None
+
 		self.tensor_type = torch.float32
 		self.np_type     = np.float32
 		self.val_ratio   = validation_ratio
@@ -110,6 +131,11 @@ class TorchTrainingData:
 			for vidx in val_indices:
 				validation.append(sorted_group[vidx])
 
+			# These are stored so that the loadGradientLSP function
+			# can properly split up the LSPs when called.
+			self.train_indices = train_indices
+			self.val_indices   = val_indices
+
 		# We now have a list of structures for training and a list of 
 		# structures for validation. Send them each to the function that
 		# computes all of the necessary tensors for the actual training
@@ -126,6 +152,12 @@ class TorchTrainingData:
 		self.train_n_inputs    = training_tensors[3]
 		self.train_reduction   = training_tensors[4]
 		self.train_volumes     = training_tensors[5]
+		self.train_forces      = training_tensors[6]
+		self.train_force_lsp   = [
+			training_tensors[7],
+			training_tensors[8],
+			training_tensors[9]
+		]
 
 		if validation_ratio != 1.0:
 			validation_tensors = self._getTensors(validation)
@@ -137,6 +169,12 @@ class TorchTrainingData:
 			self.val_n_inputs    = validation_tensors[3]
 			self.val_reduction   = validation_tensors[4]
 			self.val_volumes     = validation_tensors[5]
+			self.val_forces      = validation_tensors[6]
+			self.val_force_lsp   = [
+				training_tensors[7],
+				training_tensors[8],
+				training_tensors[9]
+			]
 
 	# This function is meant to be called on a set of training structures once
 	# the training and validation structures have been separated.
@@ -149,6 +187,16 @@ class TorchTrainingData:
 		energies = [s[0].structure_energy for s in structures]
 		energies = torch.tensor([energies], dtype=self.tensor_type)
 		energies = energies.transpose(0, 1)
+
+		if self.has_force:
+			forces   = []
+			for struct in structures:
+				for atom in struct:
+					forces.append(atom.force)
+
+			forces = torch.tensor(forces, dtype=self.tensor_type)
+		else:
+			forces = None
 
 		# This doesn't get used for training, so we can keep it as a python
 		# array.
@@ -194,8 +242,24 @@ class TorchTrainingData:
 			lsp,
 			n_inputs,
 			reduction,
-			volumes
+			volumes,
+			forces
 		)
+
+	# This will generate displaced LSPs necessary for calculation of the
+	# gradient/force of the energy predicted by the model. This will also
+	# ensure that the LSPs are properly split up to align with the training
+	# and validation split for the other data.
+	def loadGradientLSP(self, neighborList, config):
+		# The ultimate goal of this process is to generate x, y and z
+		# displaced LSPs for both the training and validation dataset 
+		# so that they can be passed into the model and used to compute
+		# the gradient of the energy it predicts, for each atom.
+		calculator = TorchForceCalculator(torch.float32, potential.config)
+
+		# Now we split up the neighborList into training and validation
+		# while simultaneously flattening it.
+
 
 	def to(self, device):
 		self.train_energies    = self.train_energies.to(device)
@@ -210,6 +274,10 @@ class TorchTrainingData:
 			self.val_lsp         = self.val_lsp.to(device)
 			self.val_n_inputs    = self.val_n_inputs.to(device)
 			self.val_reduction   = self.val_reduction.to(device)
+
+		if self.has_force:
+			self.train_forces = self.train_forces.to(device)
+			self.val_forces   = self.val_forces.to(device)
 
 		return self
 
@@ -364,8 +432,16 @@ class Trainer:
 	# The last argument is the config structure generated when the program
 	# parses its command line arguments. You can also just as easily make
 	# your own if you want to call this code from another program.
-	def __init__(self, network_potential, training_set, config, log=None):
-		self.log = log
+	def __init__(self, network_potential, training_set, config, **kwargs):
+		if 'log' in kwargs:
+			self.log = kwargs['log']
+		else:
+			self.log = None
+
+		if 'neighborList' in kwargs:
+			self.neighborList = kwargs['neighborList']
+		else:
+			self.neighborList = None
 
 		if self.log is not None:
 			self.log.log("Initializing Trainer")
@@ -388,6 +464,11 @@ class Trainer:
 		# The following code sets that up.
 		self.seed            = config.validation_split_seed
 		self.smi_log         = config.nvidia_smi_log
+		self.has_force       = config.force_interval > 0
+		self.force_interval  = config.force_interval
+		self.force_lr        = config.force_learning_rate
+		self.force_train_log = config.force_train_log
+		self.force_val_log   = config.force_val_log
 		self.l2              = config.l2_regularization_prefactor
 		self.restart_error   = config.error_restart_level
 		self.training_set    = training_set
@@ -407,6 +488,10 @@ class Trainer:
 		self.learning_rate   = config.learning_rate
 		self.max_lbfgs       = config.max_lbfgs_iterations
 
+		if self.has_force and self.neighborList is None:
+			msg  = "A neighbor list structure must be passed to this class "
+			msg += "if force optimization is enabled."
+			raise Exception(msg)
 
 		self.restarts        = 0
 		self.need_to_restart = False
@@ -415,7 +500,8 @@ class Trainer:
 		self.dataset = TorchTrainingData(
 			training_set,
 			config.validation_ratio,
-			self.seed
+			self.seed,
+			force=self.has_force
 		)
 
 		if self.log is not None:
@@ -453,6 +539,20 @@ class Trainer:
 			lr=self.learning_rate, 
 			max_iter=self.max_lbfgs
 		)
+
+		if self.has_force:
+			self.force_optimizer = optim.LBFGS(
+				self.nn.getParameters(),
+				lr=self.force_lr,
+				max_iter=self.max_lbfgs
+			)
+
+			# This will get the gradient information loaded into 
+			# memory so that force optimization steps can be performed.
+			self.dataset.loadGradientLSP(
+				self.neighborList,
+				network_potential.config
+			)
 
 		if self.log is not None:
 			self.log.unindent()

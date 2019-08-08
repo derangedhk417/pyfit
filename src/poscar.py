@@ -14,10 +14,11 @@ from util import ProgressBar
 # Once data is loaded, this class can be used as an iterable, returning
 # an instance of PoscarStructure for each structure loaded.
 class PoscarLoader:
-	def __init__(self, e_shift, log=None):
+	def __init__(self, e_shift, log=None, has_force=False):
 		self.e_shift   = e_shift
 		self.loaded    = False
 		self.iter      = None
+		self.has_force = has_force 
 		self.log       = log
 
 		self.n_atoms      = 0
@@ -56,7 +57,11 @@ class PoscarLoader:
 			stride = base + 8 + atoms_in_struct
 			structure_lines = lines[base:stride]
 			
-			struct = PoscarStructure(structure_lines, self.e_shift)
+			struct = PoscarStructure(
+				structure_lines, 
+				self.e_shift,
+				has_force=self.has_force
+			)
 			self.n_atoms += struct.n_atoms
 			self.structures.append(struct)
 
@@ -115,7 +120,7 @@ class PoscarLoader:
 
 # Stores all of the information in a poscar structure.
 class PoscarStructure:
-	def __init__(self, lines, e_shift):
+	def __init__(self, lines, e_shift, has_force=False):
 		self.comment = lines[0]
 		self.scale_factor = float(lines[1])
 		self.a1           = self._parseVector(lines[2], self.scale_factor)
@@ -135,9 +140,20 @@ class PoscarStructure:
 
 		self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
 
+		self.forces = None
+		if self.has_force:
+			self.forces = np.zeros((len(lines[7:-1]), 3))
+
 		self.atoms = np.zeros((len(lines[7:-1]), 3))
 		for idx, line in enumerate(lines[7:-1]):
-			self.atoms[idx, :] = self._parseVector(line, self.scale_factor)
+			cells = self._getCellsFromLine(line)
+
+			if self.has_force:
+				self.forces[idx, :] = [float(i) for i in cells[3:]]
+			
+			self.atoms[idx, :] = [
+				float(i) * self.scale_factor for i in cells[:3]
+			]
 
 	def _parseVector(self, string, scale):
 		# This function parses a vector supplied as a string of space 
@@ -151,6 +167,16 @@ class PoscarStructure:
 			float(cells[1])*scale,
 			float(cells[2])*scale
 		])
+
+	# Extracts all of the relevent cells of information from a line, split
+	# on ' ' characters. Also removes '#' characters.
+	def _getCellsFromLine(self, line):
+		cells = []
+		for cell in line.split(" "):
+			if cell != '' and not cell.isspace() and cell != '#':
+				cells.append(cell)
+
+		return cells
 
 	def _dumpVector(self, vec):
 		return '%.10f %.10f %.10f'%(vec[0], vec[1], vec[2])
