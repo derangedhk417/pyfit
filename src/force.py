@@ -31,7 +31,7 @@ class TorchForceCalculator:
 
 		lsp = None
 
-		while chunk_stride < len(neighbors):
+		while chunk_start < len(neighbors):
 			self.loadNeighbors(neighbors[chunk_start:chunk_stride])
 			tmp = self._computeLSP()
 			self.cleanupNeighbors()
@@ -48,12 +48,85 @@ class TorchForceCalculator:
 
 		return lsp
 
+	# This efficiently generates a set of LSPs suitable for calculating the
+	# gradient of the energy predicted by a neural network via finite 
+	# differencing. This will displace the location of each atom on the
+	# x, y and z axes separately and calculate a set of LSPs for each
+	# displaced setup. The returned values will be as follows:
+	#
+	# 1) LSP0 -> Undisplaced LSP values
+	# 2) LSPx -> LSPs after x displacement
+	# 3) LSPy -> LSPs after y displacement
+	# 4) LSPz -> LSPs after z displacement
+	#
+	# From there, the gradient is 
+	#     ((M(LSPx) - M(LSP0))/disp)i + 
+	#     ((M(LSPy) - M(LSP0))/disp)j + 
+	#     ((M(LSPz) - M(LSP0))/disp)k + 
+	#
+	# Where M(x) is the model.
+	def generateGradientDisplacementLSPs(self, neighbors, disp, max_chunk):
+		chunk_start  = 0
+		chunk_stride = chunk_start + max_chunk
+
+		lsp0 = None
+		lspx = None
+		lspy = None
+		lspz = None
+
+		while chunk_start < len(neighbors):
+			self.loadNeighbors(neighbors[chunk_start:chunk_stride])
+
+			tmp = self._computeLSP()
+			if lsp0 is None:
+				lsp0 = tmp
+			else:
+				lsp0 = torch.cat((lsp0, tmp), 0)
+
+			self.displace(0, disp)
+			tmp = self._computeLSP()
+			if lspx is None:
+				lspx = tmp
+			else:
+				lspx = torch.cat((lspx, tmp), 0)
+			self.displace(0, -disp)
+
+			self.displace(1, disp)
+			tmp = self._computeLSP()
+			if lspy is None:
+				lspy = tmp
+			else:
+				lspy = torch.cat((lspy, tmp), 0)
+			self.displace(1, -disp)
+
+			self.displace(2, disp)
+			tmp = self._computeLSP()
+			if lspz is None:
+				lspz = tmp
+			else:
+				lspz = torch.cat((lspz, tmp), 0)
+
+			self.cleanupNeighbors()
+
+			chunk_start  += max_chunk
+			chunk_stride += max_chunk
+
+			chunk_stride = min(chunk_stride, len(neighbors))
+
+		return lsp0, lspx, lspy, lspz
+
+	# This deletes the rather large arrays of neighbors. The GC should
+	# do this automatically, but it never hurts to do it manually.
 	def cleanupNeighbors(self):
 		del self.neighbor_l
 		del self.neighbor_r
 		del self.dupl
 		self.neighbors_loaded = False
 
+	# This takes a neighbor list structure and converts it into three tensors
+	# that are structured so that array operations can be used to compute the
+	# LSPs very efficiently. This includes performing LSP calculations for all
+	# atoms at once using operations that span all atoms in the training set.
 	def loadNeighbors(self, neighbors):
 		# Firstly, figure out the highest number of upper diagonal combination
 		# of neighbors present in the dataset.
@@ -256,3 +329,14 @@ class TorchForceCalculator:
 			final_lsp_tensor = torch.cat((final_lsp_tensor, final_lsps[i]), 1)
 
 		return torch.log(final_lsp_tensor + 0.5)
+
+	def cpu(self):
+		return self.to('cpu')
+
+	def to(self, device):
+		if self.neighbors_loaded:
+			self.neighbor_l = self.neighbor_l.to(device)
+			self.neighbor_r = self.neighbor_r.to(device)
+			self.dupl       = self.dupl.to(device)
+
+		return self

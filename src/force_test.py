@@ -41,7 +41,11 @@ if __name__ == '__main__':
 	#calculator.loadNeighbors(all_atom_neighbors)
 
 	start = time.time_ns()
-	lsp = calculator.generateLSP(all_atom_neighbors)
+	lsp, lspx, lspy, lspz = calculator.generateGradientDisplacementLSPs(
+		all_atom_neighbors,
+		0.01,
+		500	
+	)
 	time_new = time.time_ns() - start
 
 	start = time.time_ns()
@@ -56,7 +60,9 @@ if __name__ == '__main__':
 	for l in lsp_old:
 		_lsp.extend(l)
 
-	lsp_old = torch.tensor(_lsp)
+	lsp_old = torch.tensor(_lsp).type(torch.float32)
+
+	res = (lsp - lsp_old).abs()
 
 	code.interact(local=locals())
 	

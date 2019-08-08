@@ -195,5 +195,21 @@
 	"nvidia_smi_log" : {
 		"type"        : "str",
 		"description" : "The file to log the output of the nvidia-smi command into. If this is blank, it will not be logged. If specified, the output will be logged every 50 iterations."
+	},
+	"force_interval" : {
+		"type"        : "int",
+		"description" : "Calculate and optimize the forces predicted by the model at this interval. Example: If you set this to 5, the force prediction will be optimized every 5 energy optimization steps. A force optimization step should take about 4 times as long as an energy optimization step. Use zero to indicate that force optimization steps should not be performed."
+	},
+	"force_learning_rate" : {
+		"type"        : "float",
+		"description" : "The learning rate to specify for the optimizer used for force training."
+	},
+	"force_train_log" : {
+		"type"        : "str",
+		"description" : "The file to log the training error in the force prediction in."
+	},
+	"force_val_log" : {
+		"type"        : "str",
+		"description" : "The file to log the validation error in the force prediction in."
 	}
 }
