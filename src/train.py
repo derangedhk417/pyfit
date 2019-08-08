@@ -47,19 +47,10 @@ class TorchTrainingData:
 		else:
 			self.has_force = False
 
-		if 'neighborList' in kwargs:
-			self.neighborList = kwargs['neighborList']
-		else:
-			self.neighborList = None
+		self.tensor_type  = torch.float32
+		self.np_type      = np.float32
+		self.val_ratio    = validation_ratio
 
-		if 'config' in kwargs:
-			self.config = kwargs['config']
-		else:
-			self.config = None
-
-		self.tensor_type = torch.float32
-		self.np_type     = np.float32
-		self.val_ratio   = validation_ratio
 		# The first thing we need to do is split the training set data up into
 		# training and validation data. In order for the validation data to be
 		# useable, we need to ensure that it represents a proportionate cross
@@ -71,6 +62,7 @@ class TorchTrainingData:
 		# between the minimum and maximum volume, not extrapolating (which 
 		# would be the case if the largest and smallest were in the validation
 		# set and not the training set).
+
 
 		# First, get a list of training inputs by their group.
 		by_group, group_names = training_set.getAllByGroup()
@@ -92,9 +84,11 @@ class TorchTrainingData:
 				key=lambda x: x[0].structure_volume
 			)
 
+
 			if validation_ratio == 1.0:
 				indices       = np.arange(0, len(sorted_group))
 				train_indices = indices
+
 			else:
 				# Now we remove the first and last indices and determine what 
 				# percentage of what remains needs to be selected for validation.
@@ -153,11 +147,6 @@ class TorchTrainingData:
 		self.train_reduction   = training_tensors[4]
 		self.train_volumes     = training_tensors[5]
 		self.train_forces      = training_tensors[6]
-		self.train_force_lsp   = [
-			training_tensors[7],
-			training_tensors[8],
-			training_tensors[9]
-		]
 
 		if validation_ratio != 1.0:
 			validation_tensors = self._getTensors(validation)
@@ -170,11 +159,6 @@ class TorchTrainingData:
 			self.val_reduction   = validation_tensors[4]
 			self.val_volumes     = validation_tensors[5]
 			self.val_forces      = validation_tensors[6]
-			self.val_force_lsp   = [
-				training_tensors[7],
-				training_tensors[8],
-				training_tensors[9]
-			]
 
 	# This function is meant to be called on a set of training structures once
 	# the training and validation structures have been separated.
@@ -187,16 +171,6 @@ class TorchTrainingData:
 		energies = [s[0].structure_energy for s in structures]
 		energies = torch.tensor([energies], dtype=self.tensor_type)
 		energies = energies.transpose(0, 1)
-
-		if self.has_force:
-			forces   = []
-			for struct in structures:
-				for atom in struct:
-					forces.append(atom.force)
-
-			forces = torch.tensor(forces, dtype=self.tensor_type)
-		else:
-			forces = None
 
 		# This doesn't get used for training, so we can keep it as a python
 		# array.
@@ -245,20 +219,6 @@ class TorchTrainingData:
 			volumes,
 			forces
 		)
-
-	# This will generate displaced LSPs necessary for calculation of the
-	# gradient/force of the energy predicted by the model. This will also
-	# ensure that the LSPs are properly split up to align with the training
-	# and validation split for the other data.
-	def loadGradientLSP(self, neighborList, config):
-		# The ultimate goal of this process is to generate x, y and z
-		# displaced LSPs for both the training and validation dataset 
-		# so that they can be passed into the model and used to compute
-		# the gradient of the energy it predicts, for each atom.
-		calculator = TorchForceCalculator(torch.float32, potential.config)
-
-		# Now we split up the neighborList into training and validation
-		# while simultaneously flattening it.
 
 
 	def to(self, device):
@@ -438,10 +398,10 @@ class Trainer:
 		else:
 			self.log = None
 
-		if 'neighborList' in kwargs:
-			self.neighborList = kwargs['neighborList']
-		else:
-			self.neighborList = None
+		if 'xdisp' in kwargs:
+			self.xdisp = kwargs['xdisp']
+			self.ydisp = kwargs['ydisp']
+			self.zdisp = kwargs['zdisp']
 
 		if self.log is not None:
 			self.log.log("Initializing Trainer")
@@ -467,6 +427,7 @@ class Trainer:
 		self.has_force       = config.force_interval > 0
 		self.force_interval  = config.force_interval
 		self.force_lr        = config.force_learning_rate
+		self.disp            = config.force_finite_diff_step
 		self.force_train_log = config.force_train_log
 		self.force_val_log   = config.force_val_log
 		self.l2              = config.l2_regularization_prefactor
@@ -500,7 +461,7 @@ class Trainer:
 		self.dataset = TorchTrainingData(
 			training_set,
 			config.validation_ratio,
-			self.seed,
+			seed=self.seed,
 			force=self.has_force
 		)
 
@@ -541,17 +502,34 @@ class Trainer:
 		)
 
 		if self.has_force:
+			# Setup an optimizer for the force calculations
+			# and load the training - validation split for
+			# the displaced lsps.
 			self.force_optimizer = optim.LBFGS(
 				self.nn.getParameters(),
 				lr=self.force_lr,
 				max_iter=self.max_lbfgs
 			)
 
-			# This will get the gradient information loaded into 
-			# memory so that force optimization steps can be performed.
-			self.dataset.loadGradientLSP(
-				self.neighborList,
-				network_potential.config
+			self.xdisp_dataset = TorchTrainingData(
+				self.xdisp,
+				config.validation_ratio,
+				seed=self.seed,
+				force=self.has_force
+			)
+
+			self.ydisp_dataset = TorchTrainingData(
+				self.ydisp,
+				config.validation_ratio,
+				seed=self.seed,
+				force=self.has_force
+			)
+
+			self.zdisp_dataset = TorchTrainingData(
+				self.zdisp,
+				config.validation_ratio,
+				seed=self.seed,
+				force=self.has_force
 			)
 
 		if self.log is not None:
@@ -566,6 +544,27 @@ class Trainer:
 		sqr_sum    /= self.dataset.train_n_inputs
 		rmse        = torch.sqrt(sqr_sum)
 		return rmse
+
+	def force_loss(self):
+		no_disp = self.nn.atomic_forward(self.dataset.train_lsp)
+		x_disp  = self.nn.atomic_forward(self.xdisp_dataset.train_lsp)
+		y_disp  = self.nn.atomic_forward(self.ydisp_dataset.train_lsp)
+		z_disp  = self.nn.atomic_forward(self.zdisp_dataset.train_lsp)
+
+		# Calculate the force on each axis.
+		f_x = (x_disp - no_disp) / self.disp
+		f_y = (y_disp - no_disp) / self.disp
+		f_z = (z_disp - no_disp) / self.disp
+
+		# Concatenate them together so that they have the same structure
+		# as the reference forces.
+		forces = torch.cat((f_x, f_y, f_z), 1)
+
+		diff     = forces - self.dataset.train_forces
+		sqr_mean = (diff**2).mean()
+		rmse     = torch.sqrt(sqr_mean)
+		return rmse
+
 
 	def validation_loss(self):
 		with torch.no_grad():
@@ -586,6 +585,16 @@ class Trainer:
 			output  = output.cpu().numpy().transpose()[0]
 			output *= self.reciprocals
 			return output
+
+	def force_training_closure(self):
+		self.force_optimizer.zero_grad()
+		loss = self.force_loss()
+
+		if self.l2 != 0.0:
+			loss = loss + self.nn.getL2Loss()
+
+		loss.backward()
+		return loss
 
 	def training_closure(self):
 		self.optimizer.zero_grad()
@@ -803,6 +812,10 @@ class Trainer:
 			# Perform an evaluate and correct step, while storing
 			# the resulting loss in self.training_losses.
 			self.optimizer.step(self.training_closure)
+
+			if self.has_force:
+				if self.iteration % self.force_interval == 0:
+					self.force_optimizer.step(self.force_training_closure)
 
 			self.iteration += 1
 

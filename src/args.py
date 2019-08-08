@@ -663,6 +663,18 @@ def ValidateArgs(args):
 				return 1
 
 	if args.run_training:
+
+		if args.force_interval > 0:
+			if args.dft_input_file == "":
+				msg  = "You have configured the program to run training with "
+				msg += "force optimization but have not specified a value for "
+				msg += "dft_input_file. Please specify it in the config file "
+				msg += "or use the following option: \n"
+				msg += "\t--dft-file=<some file>\n\n"
+				print(msg)
+				PrintHelp(None)
+				return 1
+
 		if args.training_iterations < 0:
 			print("Negative number of training iterations specified.")
 			return 1

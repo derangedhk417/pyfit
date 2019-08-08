@@ -17,7 +17,19 @@ from training_set import TrainingSet
 from neighbor     import GenerateNeighborList
 from lsp          import GenerateLocalStructureParams
 from train        import Trainer
+from force        import TorchLSPCalculator
 
+# This is designed to generate filenames for the x, y and z displacement
+# LSPs based on a naming convention. The idea is that the original LSPs 
+# and the displaced LSPs should always be packaged together and adhere
+# to the naming convention.
+def getDispFileName(original_file_name, axis):
+	cells  = original_file_name.split('.')
+	suffix = 'disp_%s'%axis
+
+	result = '.'.join(cells[:-1]) + '.' + suffix + '.' + cells[-1]
+
+	return result
 
 def RunPyfit(config):
 	# Try to ensure that all of the configuration settings make sense. If the 
@@ -55,25 +67,51 @@ def RunPyfit(config):
 		potential   = NetworkPotential(log=log)
 		potential   = potential.loadFromFile(config.neural_network_in)
 
-		neighborLists = GenerateNeighborList(
-			poscar_data.structures,
-			potential,
+		neighborList = NeighborList(potential, log=log)
+		neighborList.GenerateNeighborList(poscar_data.structures)
+
+		# This will be useful later on.
+		structure_strides = neighborList.getStructureStrides()
+
+		lspCalculator = TorchLSPCalculator(
+			torch.float32,
+			potentia.config,
 			log=log
 		)
 
-		lsps = GenerateLocalStructureParams(
-			neighborLists,
-			potential.config,
-			log=log
-		)
+		lsp = lspCalculator.generateLSP(neighborList.atom_neighbors)
+
 
 		training_set = TrainingSet(log=log).loadFromMemory(
 			poscar_data,
-			lsps,
-			potential,
+			lsp,
+			structure_strides,
+			potential
 		)
 
 		training_set.writeToFile(config.training_set_output_file)
+
+		if force_training:
+			lspx, lspy, lspz = lspCalculator.generateGradientDisplacementLSPs(
+				neighborList.atom_neighbors, config.force_finite_diff_step, 500
+			)
+
+			# Now we write these to their own training set files.
+			xname = getDispFileName(config.training_set_output_file, 'x')
+			yname = getDispFileName(config.training_set_output_file, 'y')
+			zname = getDispFileName(config.training_set_output_file, 'z')
+
+			for name, lsp in zip([xname, yname, zname], [lspx, lspy, lspz]):
+				training_set = TrainingSet(log=log).loadFromMemory(
+					poscar_data,
+					lsp,
+					structure_strides,
+					potential
+				)
+
+				training_set.writeToFile(name)
+
+		
 
 	if config.run_training:
 		# If we generated the training set in this run, then there was 
@@ -93,6 +131,21 @@ def RunPyfit(config):
 				log.log("potential.config != training_set.config")
 				return 1
 
+			if force_training:
+				# We need to load the x, y and z displacement files.
+				xname = getDispFileName(config.training_set_output_file, 'x')
+				yname = getDispFileName(config.training_set_output_file, 'y')
+				zname = getDispFileName(config.training_set_output_file, 'z')
+
+				training_x = TrainingSet(log=log, has_force=force_training)
+				training_x = training_set.loadFromFile(xname)
+
+				training_y = TrainingSet(log=log, has_force=force_training)
+				training_y = training_set.loadFromFile(zname)
+
+				training_z = TrainingSet(log=log, has_force=force_training)
+				training_z = training_set.loadFromFile(zname)
+
 		if config.randomize:
 			log.log("Randomizing network potential parameters.")
 			potential.randomizeNetwork()
@@ -102,20 +155,19 @@ def RunPyfit(config):
 			if not training_set.generateWarnings(config.validation_ratio):
 				return 1
 
-		kwargs = {}
-		if force_training:
-			kwargs['neighborList'] = neighborLists
-
-		kwargs['log'] = log
-
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.
-		trainer = Trainer(potential, training_set, config, **kwargs)
+		trainer = Trainer(
+			potential, 
+			training_set, 
+			config, 
+			log=log,
+			xdisp=training_x,
+			ydisp=training_y,
+			zdisp=training_z
+		)
 
 		trainer.train()
-
-
-	
 
 if __name__ == '__main__':
 	# Parse the arguments. And construct a configuration structure that can be

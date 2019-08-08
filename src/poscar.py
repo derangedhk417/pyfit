@@ -14,11 +14,10 @@ from util import ProgressBar
 # Once data is loaded, this class can be used as an iterable, returning
 # an instance of PoscarStructure for each structure loaded.
 class PoscarLoader:
-	def __init__(self, e_shift, log=None, has_force=False):
+	def __init__(self, e_shift, log=None):
 		self.e_shift   = e_shift
 		self.loaded    = False
 		self.iter      = None
-		self.has_force = has_force 
 		self.log       = log
 
 		self.n_atoms      = 0
@@ -59,8 +58,7 @@ class PoscarLoader:
 			
 			struct = PoscarStructure(
 				structure_lines, 
-				self.e_shift,
-				has_force=self.has_force
+				self.e_shift
 			)
 			self.n_atoms += struct.n_atoms
 			self.structures.append(struct)
@@ -139,21 +137,17 @@ class PoscarStructure:
 			raise ValueError(msg)
 
 		self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
-
-		self.forces = None
-		if self.has_force:
-			self.forces = np.zeros((len(lines[7:-1]), 3))
-
-		self.atoms = np.zeros((len(lines[7:-1]), 3))
+		
+		self.forces = torch.zeros((len(lines[7:-1]), 3), dtype=torch.float32)
+		self.atoms  = torch.zeros((len(lines[7:-1]), 3), dtype=torch.float32)
 		for idx, line in enumerate(lines[7:-1]):
 			cells = self._getCellsFromLine(line)
-
-			if self.has_force:
-				self.forces[idx, :] = [float(i) for i in cells[3:]]
-			
 			self.atoms[idx, :] = [
 				float(i) * self.scale_factor for i in cells[:3]
 			]
+
+			if len(cells) > 3:
+				self.forces[idx, :] = [float(i) for i in cells[3:]]
 
 	def _parseVector(self, string, scale):
 		# This function parses a vector supplied as a string of space 

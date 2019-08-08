@@ -12,7 +12,7 @@ import code
 from   util import ProgressBar
 
 
-class TorchForceCalculator:
+class TorchLSPCalculator:
 	# The config parameter should be an instance of PotentialConfig
 	def __init__(self, dtype, config, log=None):
 		self.neighbors_loaded = False
