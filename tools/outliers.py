@@ -252,7 +252,7 @@ if __name__ == '__main__':
 	else:
 		worst_by_id = sorted(tmp, key=lambda x: x[1])
 
-	# Now we print the results in a somewhat humand readable format
+	# Now we print the results in a somewhat human readable format
 	# that is also fairly machine readable.
 
 	print("By Structure ID: ")

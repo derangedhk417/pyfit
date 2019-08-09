@@ -102,15 +102,15 @@ def volume_energy_plots(full_structures, nn_energies, filters, title):
 		e_nn  = [i[3] / i[2] for i in items]
 		e_dft = [i[4] / i[2] for i in items]
 		
-		pl = ax.scatter(x_nn, y_nn, s=50, color='red', marker='1')
-		pl = ax.scatter(
-			xdft, ydft, marker='o', edgecolors=c_list[i],
-			s=20, facecolors='none')
+		# pl = ax.scatter(x_nn, y_nn, s=50, color='red', marker='1')
+		# pl = ax.scatter(
+		# 	xdft, ydft, marker='o', edgecolors=c_list[i],
+		# 	s=20, facecolors='none')
 
-		pl = ax.scatter(x_nn2, y_nn2, s=50, color='red', marker='1')
-		pl = ax.scatter(
-			xdft2, ydft2, marker='o', edgecolors=c_list[i],
-			s=20, facecolors='none')
+		# pl = ax.scatter(x_nn2, y_nn2, s=50, color='red', marker='1')
+		# pl = ax.scatter(
+		# 	xdft2, ydft2, marker='o', edgecolors=c_list[i],
+		# 	s=20, facecolors='none')
 
 		pl0 = ax.scatter(v, e_nn, s=50, color='red', marker='1')
 		pl1 = ax.scatter(
