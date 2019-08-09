@@ -14,6 +14,7 @@ class TrainingSet:
 		self.log       = log
 		self.has_force = has_force
 
+
 	def loadFromFile(self, file_path):
 		if self.log is not None:
 			self.log.log("Loading Training Set")
@@ -42,6 +43,7 @@ class TrainingSet:
 			"Loading Training Set", 
 			22, self.n_structures, update_every = 10
 		)
+
 
 		# Every set of two lines from 13 onwards should correspond to a single 
 		# atom. Line 12 doesn't contain useful information.

@@ -4,7 +4,7 @@
 {
 	"generate_training_set"       : false,
 	"training_set_output_file"    : "test.nogit.lsparam.dat",
-	"dft_input_file"              : "test/input/3-ADAM-DC-L-A-POSCAR-E-full.dat",
+	"dft_input_file"              : "test-poscar-with-forces.dat",
 	"run_training"                : false,
 	"training_set_in"             : "test.nogit.lsparam.dat",
 	"neural_network_in"           : "test/nn/best.nn.dat",
@@ -32,5 +32,11 @@
 	"validation_split_seed"       : 2,
 	"error_restart_level"         : 0.0,
 	"l2_regularization_prefactor" : 0.0,
-	"nvidia_smi_log"              : ""
+	"nvidia_smi_log"              : "",
+	"force_interval"              : 1,
+	"force_learning_rate"         : 0.05,
+	"force_train_log"             : "force_train_loss.txt",
+	"force_val_log"               : "force_val_loss.txt",
+	"force_finite_diff_step"      : 0.01
+
 }

@@ -172,6 +172,15 @@ class TorchTrainingData:
 		energies = torch.tensor([energies], dtype=self.tensor_type)
 		energies = energies.transpose(0, 1)
 
+		forces = None
+		if self.has_force:
+			forces = []
+			for struct in structures:
+				for atom in struct:
+					forces.append(atom.force)
+
+			forces = torch.tensor(forces, dtype=self.tensor_type)
+
 		# This doesn't get used for training, so we can keep it as a python
 		# array.
 		volumes = []
@@ -511,25 +520,25 @@ class Trainer:
 				max_iter=self.max_lbfgs
 			)
 
+			# We don't need to load the force data from
+			# these files, it is already loaded from the
+			# main lsparam file.
 			self.xdisp_dataset = TorchTrainingData(
 				self.xdisp,
 				config.validation_ratio,
-				seed=self.seed,
-				force=self.has_force
+				seed=self.seed
 			)
 
 			self.ydisp_dataset = TorchTrainingData(
 				self.ydisp,
 				config.validation_ratio,
-				seed=self.seed,
-				force=self.has_force
+				seed=self.seed
 			)
 
 			self.zdisp_dataset = TorchTrainingData(
 				self.zdisp,
 				config.validation_ratio,
-				seed=self.seed,
-				force=self.has_force
+				seed=self.seed
 			)
 
 		if self.log is not None:

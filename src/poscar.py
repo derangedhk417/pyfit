@@ -3,6 +3,7 @@
 # a structure that is ready for use in neural network training.
 
 import numpy as np
+import torch
 from util import ProgressBar
 
 # Designed to load a poscar data file or set of poscar data files. Takes
@@ -138,8 +139,8 @@ class PoscarStructure:
 
 		self.energy = float(lines[-1]) + (self.n_atoms * e_shift)
 		
-		self.forces = torch.zeros((len(lines[7:-1]), 3), dtype=torch.float32)
-		self.atoms  = torch.zeros((len(lines[7:-1]), 3), dtype=torch.float32)
+		self.forces = np.zeros((len(lines[7:-1]), 3))
+		self.atoms  = np.zeros((len(lines[7:-1]), 3))
 		for idx, line in enumerate(lines[7:-1]):
 			cells = self._getCellsFromLine(line)
 			self.atoms[idx, :] = [
@@ -184,7 +185,10 @@ class PoscarStructure:
 		res += '%s\n'%self._dumpVector(self.a3)
 		res += '%i\n'%self.n_atoms
 		res += '%s\n'%('c' if self.is_cartesian else 'd')
-		for atom in self.atoms:
-			res += '%s\n'%self._dumpVector(atom)
+		for atom, force in zip(self.atoms, self.forces):
+			res += '%s %s\n'%(
+				self._dumpVector(atom),
+				self._dumpVector(force)
+			)
 		res += '%f\n'%self.energy
 		return res

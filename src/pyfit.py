@@ -8,13 +8,14 @@ import os
 import sys
 import copy
 import numpy as np
+import torch
 
 from args         import ParseArgs, ValidateArgs, PrintHelp
 from config       import PotentialConfig
 from poscar       import PoscarLoader
 from potential    import NetworkPotential
 from training_set import TrainingSet
-from neighbor     import GenerateNeighborList
+from neighbor     import NeighborList
 from lsp          import GenerateLocalStructureParams
 from train        import Trainer
 from force        import TorchLSPCalculator
@@ -59,8 +60,7 @@ def RunPyfit(config):
 	if config.generate_training_set:
 		poscar_data = PoscarLoader(
 			config.e_shift, 
-			log=log, 
-			has_force=force_training
+			log=log
 		)
 		poscar_data = poscar_data.loadFromFile(config.dft_input_file)
 
@@ -75,14 +75,15 @@ def RunPyfit(config):
 
 		lspCalculator = TorchLSPCalculator(
 			torch.float32,
-			potentia.config,
+			potential.config,
 			log=log
 		)
 
 		lsp = lspCalculator.generateLSP(neighborList.atom_neighbors)
 
 
-		training_set = TrainingSet(log=log).loadFromMemory(
+		training_set = TrainingSet(log=log, has_force=force_training)
+		training_set = training_set.loadFromMemory(
 			poscar_data,
 			lsp,
 			structure_strides,
@@ -137,14 +138,14 @@ def RunPyfit(config):
 				yname = getDispFileName(config.training_set_output_file, 'y')
 				zname = getDispFileName(config.training_set_output_file, 'z')
 
-				training_x = TrainingSet(log=log, has_force=force_training)
-				training_x = training_set.loadFromFile(xname)
+				training_x = TrainingSet(log=log)
+				training_x = training_x.loadFromFile(xname)
 
-				training_y = TrainingSet(log=log, has_force=force_training)
-				training_y = training_set.loadFromFile(zname)
+				training_y = TrainingSet(log=log)
+				training_y = training_y.loadFromFile(zname)
 
-				training_z = TrainingSet(log=log, has_force=force_training)
-				training_z = training_set.loadFromFile(zname)
+				training_z = TrainingSet(log=log)
+				training_z = training_z.loadFromFile(zname)
 
 		if config.randomize:
 			log.log("Randomizing network potential parameters.")
