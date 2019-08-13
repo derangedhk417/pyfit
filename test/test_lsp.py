@@ -6,6 +6,7 @@
 
 import subprocess
 import os
+import code
 import sys
 import numpy as np
 
@@ -20,7 +21,7 @@ from training_set import TrainingSet
 # These are calculated for all LSPs for each atom and then compared.
 max_err_threshold  = 0.0001
 mean_err_threshold = 0.00001
-std_err_threshold  = 0.00001
+std_err_threshold  = 0.001
 
 def compareInputs(new, old, i, j):
 	def location():
@@ -62,6 +63,9 @@ def compareTrainingSets(new, old):
 	new_set = TrainingSet().loadFromFile(new)
 	old_set = TrainingSet().loadFromFile(old)
 
+	all_percent_errors = []
+	all_values         = []
+
 	# First, compare all of the structural parameters.
 	for i, struct in enumerate(new_set.structures):
 		for j, new_in in enumerate(struct):
@@ -96,6 +100,9 @@ def compareTrainingSets(new, old):
 			for idx in range(abs_errors.shape[0]):
 				if abs_errors[idx] < 1e-6:
 					percent_errors[idx] = 0.0
+
+			all_percent_errors.append(percent_errors.tolist())
+			all_values.append(new_in.structure_params)
 
 			_max = percent_errors.max()
 			_avg = percent_errors.mean()

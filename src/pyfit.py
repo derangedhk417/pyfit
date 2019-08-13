@@ -8,15 +8,18 @@ import os
 import sys
 import copy
 import numpy as np
+import torch
 
 from args         import ParseArgs, ValidateArgs, PrintHelp
 from config       import PotentialConfig
 from poscar       import PoscarLoader
 from potential    import NetworkPotential
 from training_set import TrainingSet
-from neighbor     import GenerateNeighborList
+from neighbor     import NeighborList
 from lsp          import GenerateLocalStructureParams
 from train        import Trainer
+from force        import TorchLSPCalculator
+
 
 
 def RunPyfit(config):
@@ -49,22 +52,27 @@ def RunPyfit(config):
 		potential   = NetworkPotential(log=log)
 		potential   = potential.loadFromFile(config.neural_network_in)
 
-		neighborLists = GenerateNeighborList(
-			poscar_data.structures,
-			potential,
-			log=log
-		)
+		neighborList = NeighborList(potential, log=log)
+		neighborList.GenerateNeighborList(poscar_data.structures)
 
-		lsps = GenerateLocalStructureParams(
-			neighborLists,
+		# This will be useful later on.
+		structure_strides = neighborList.getStructureStrides()
+
+		lspCalculator = TorchLSPCalculator(
+			torch.float64,
 			potential.config,
 			log=log
 		)
 
-		training_set = TrainingSet(log=log).loadFromMemory(
+		lsp = lspCalculator.generateLSP(neighborList.atom_neighbors)
+
+
+		training_set = TrainingSet(log=log)
+		training_set = training_set.loadFromMemory(
 			poscar_data,
-			lsps,
-			potential,
+			lsp,
+			structure_strides,
+			potential
 		)
 
 		training_set.writeToFile(config.training_set_output_file)
