@@ -314,7 +314,10 @@ class TorchLSPCalculator:
 		max_pm           = max(self.config.legendre_orders)
 		legendre_results = []
 
-		zeroeth = torch.ones((angular.shape[0], angular.shape[1]))
+		zeroeth = torch.ones(
+			(angular.shape[0], angular.shape[1]),
+			dtype=self.dtype
+		)
 		legendre_results.append(zeroeth)
 
 		first = angular.clone()
@@ -347,7 +350,12 @@ class TorchLSPCalculator:
 		for i in range(2, len(final_lsps)):
 			final_lsp_tensor = torch.cat((final_lsp_tensor, final_lsps[i]), 1)
 
-		return torch.log(final_lsp_tensor + 0.5)
+		if self.config.gi_mode == 1:
+			return torch.log(final_lsp_tensor + 0.5)
+		elif self.config.gi_mode == 5:
+			return torch.log(torch.sqrt(final_lsp_tensor**2 + 1) + final_lsp_tensor)
+		else:
+			return final_lsp_tensor
 
 	def cpu(self):
 		return self.to('cpu')

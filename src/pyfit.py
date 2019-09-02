@@ -74,7 +74,7 @@ def RunPyfit(config):
 		structure_strides = neighborList.getStructureStrides()
 
 		lspCalculator = TorchLSPCalculator(
-			torch.float32,
+			torch.float64,
 			potential.config,
 			log=log
 		)
@@ -158,15 +158,23 @@ def RunPyfit(config):
 
 		# By this point, 'training_set' holds a training set instance, one way
 		# or another. Now we actually run the training.
-		trainer = Trainer(
-			potential, 
-			training_set, 
-			config, 
-			log=log,
-			xdisp=training_x,
-			ydisp=training_y,
-			zdisp=training_z
-		)
+		if force_training:
+			trainer = Trainer(
+				potential, 
+				training_set, 
+				config, 
+				log=log,
+				xdisp=training_x,
+				ydisp=training_y,
+				zdisp=training_z
+			)
+		else:
+			trainer = Trainer(
+				potential, 
+				training_set, 
+				config, 
+				log=log
+			)
 
 		trainer.train()
 

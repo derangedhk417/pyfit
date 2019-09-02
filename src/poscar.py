@@ -36,7 +36,7 @@ class PoscarLoader:
 		with open(file_path, 'r') as file:
 			text = file.read()
 
-		text  = text.rstrip()
+		text  = text.rstrip().replace('\t', ' ')
 		lines = text.split("\n")
 
 		progress = ProgressBar("Poscar Files ", 22, len(lines), update_every=50)

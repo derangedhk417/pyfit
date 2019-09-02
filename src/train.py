@@ -458,11 +458,7 @@ class Trainer:
 		self.learning_rate   = config.learning_rate
 		self.max_lbfgs       = config.max_lbfgs_iterations
 
-		if self.has_force and self.neighborList is None:
-			msg  = "A neighbor list structure must be passed to this class "
-			msg += "if force optimization is enabled."
-			raise Exception(msg)
-
+		
 		self.restarts        = 0
 		self.need_to_restart = False
 
@@ -527,19 +523,19 @@ class Trainer:
 				self.xdisp,
 				config.validation_ratio,
 				seed=self.seed
-			)
+			).to(self.device)
 
 			self.ydisp_dataset = TorchTrainingData(
 				self.ydisp,
 				config.validation_ratio,
 				seed=self.seed
-			)
+			).to(self.device)
 
 			self.zdisp_dataset = TorchTrainingData(
 				self.zdisp,
 				config.validation_ratio,
 				seed=self.seed
-			)
+			).to(self.device)
 
 		if self.log is not None:
 			self.log.unindent()
@@ -599,6 +595,8 @@ class Trainer:
 		self.force_optimizer.zero_grad()
 		loss = self.force_loss()
 
+		self.last_force_loss = loss.item()
+
 		if self.l2 != 0.0:
 			loss = loss + self.nn.getL2Loss()
 
@@ -634,6 +632,13 @@ class Trainer:
 			val_size               = (self.iterations // self.val_interval) + 1
 			self.validation_losses = np.zeros(val_size)
 
+		if self.force_interval != 0:
+			force_train_size = (self.iterations // self.force_interval) + 1
+			self.force_train_losses = np.zeros(force_train_size)
+
+			force_val_size = (self.iterations // self.force_interval) + 1
+			self.force_val_losses = np.zeros(force_train_size)
+
 		if self.energy_interval != 0:
 			energy_saves  = (self.iterations // self.energy_interval) + 1
 			n_structures  = self.dataset.train_reduction.shape[0]
@@ -660,6 +665,9 @@ class Trainer:
 
 		with torch.no_grad():
 			self.last_loss = self.loss().cpu().item()
+
+			if self.force_interval != 0:
+				self.last_force_loss = self.force_loss().cpu().item()
 
 		if self.log is not None:
 			self.log.log("Iterations             = %i"%(self.iterations))
@@ -694,6 +702,21 @@ class Trainer:
 
 			if self.log is not None:
 				self.log.log("wrote loss log \'%s\'"%(self.loss_log))
+
+		if self.force_interval != 0:
+			with open(self.force_train_log, 'w', 1024*10) as file:
+				for i in range(self.force_train_losses.shape[0]):
+					line  = '%06i %.10E\n'
+					line %= (
+						i * self.force_interval, 
+						self.force_train_losses[i]
+					)
+					file.write(line)
+
+			if self.log is not None:
+				self.log.log("wrote force training log \'%s\'"%(
+					self.force_train_log
+				))
 
 		# Write the validation file.
 		if self.val_interval != 0:
@@ -825,6 +848,9 @@ class Trainer:
 			if self.has_force:
 				if self.iteration % self.force_interval == 0:
 					self.force_optimizer.step(self.force_training_closure)
+					idx = (self.iteration // self.force_interval)
+					self.force_train_losses[idx] = self.last_force_loss 
+					
 
 			self.iteration += 1
 
