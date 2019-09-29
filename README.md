@@ -119,5 +119,4 @@ pyfit comes with a test directory and two test scripts, `test_ev.py` and `test_l
 
 ## Notes
 
-- All of the files in src/ are meant to be reuseable. This means that you can import them and use them in your own code without too much effort. See doc/ for more details.
-- You might notice that the structural parameter generation and neighbor list calculations take quite a while. This is because they are written entirely in Python and run on a single thread. They do use numpy to speed things up, but that can only go so far.
+- All of the files in src/ are meant to be reuseable. This means that you can import them and use them in your own code without too much effort. The code in the tools/ directory contains good examples of this.
