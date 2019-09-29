@@ -12,6 +12,12 @@ This will initialize an interactive console at that line of code and allow you t
 
 1) You'll notice a lot of error messages split up into multiple lines. This is because I wanted this code to be readable in a terminal, or in an IDE that is split into multiple columns. I didn't enforce a maximum line width in the original version, and it got really annoying.
 
+2) The code that does the LSP calculations is now in force.py, because I was also going to calculate forces using the automatic differentiation system (originally). 
+
+3) pyfit_arglist.json contains a definition for each type of argument that pyfit accepts. I wouldn't recomend modifying it without looking at the way args.py parses and uses it. I can provide more information if you decide that you want to.
+
+4) I haven't fully implemented calculation of LSPs on the GPU. It shouldn't actually be that hard. It's just a matter of calling .to(self.device) on a lot of the tensor initializers in force.py -> _computeLSP. The weird thing is that I could have sworn I implemented it. I can't find the code on any of the branches though.
+
 ## Conventions
 
 * Functions meant to be exported from a module have capital letters at the start of each word.
@@ -28,3 +34,4 @@ This will initialize an interactive console at that line of code and allow you t
 - Add various checks during the training process for things that could go wrong.
    This should include things like running out of memory, among others.
 - Implement non-cartesian poscar coordinates.
+

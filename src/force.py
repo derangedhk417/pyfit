@@ -20,6 +20,7 @@ class TorchLSPCalculator:
 		self.dtype            = dtype
 		self.config           = config
 		self.log              = log
+		self.device           = None
 
 	# Because of the memory required to perform the LSP calculations
 	# quickly, this code will divide the neighbor list data into chunks
@@ -43,6 +44,7 @@ class TorchLSPCalculator:
 
 		while chunk_start < len(neighbors):
 			self.loadNeighbors(neighbors[chunk_start:chunk_stride])
+
 			tmp = self._computeLSP()
 			self.cleanupNeighbors()
 

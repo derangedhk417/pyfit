@@ -64,6 +64,9 @@ def compare(fnew, fold):
 	return True
 
 if __name__ == '__main__':
+	print("NOTE: 7 onwards might fail, because this code no longer maintains ")
+	print("      backward compatibility with certain features.")
+
 	msg  = "This script requires the test data, which is very large and "
 	msg += "therefore not in the git repo. You can download it from here:\n"
 	msg += "https://drive.google.com/file/d/1rzmByWis455mQLgmnK7nnSfDA2zoDeW7/"
@@ -97,8 +100,8 @@ if __name__ == '__main__':
 			# Compare the ev file from the old code to the one
 			# that was just produced.
 			if not compare('ev.nogit.txt', ev):
-				print("Comparison failed, exiting . . . ")
-				break
+				print("Comparison failed, continuing . . . ")
+				# break
 		else:
 			print("pyfit failed to write the nn file")
 			print("stdout:\n\n")

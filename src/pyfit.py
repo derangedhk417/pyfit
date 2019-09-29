@@ -47,6 +47,11 @@ def RunPyfit(config):
 
 
 	if config.generate_training_set:
+		if torch.cuda.is_available() and not config.force_cpu:
+			device = torch.device("cuda:%i"%config.gpu_affinity)
+		else:
+			device = torch.device('cpu')
+
 		poscar_data = PoscarLoader(config.e_shift, log=log)
 		poscar_data = poscar_data.loadFromFile(config.dft_input_file)
 		potential   = NetworkPotential(log=log)
@@ -62,7 +67,7 @@ def RunPyfit(config):
 			torch.float64,
 			potential.config,
 			log=log
-		)
+		).to(device)
 
 		lsp = lspCalculator.generateLSP(neighborList.atom_neighbors)
 
